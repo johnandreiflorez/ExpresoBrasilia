@@ -1,0 +1,77 @@
+<div id="main-card" style="position: relative;
+    margin-top: -60px;
+    background: #ffffff;
+    border-top-left-radius: 40px;
+    border-top-right-radius: 40px;
+    padding: 2rem 1.5rem 6rem 1.5rem;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    min-height: calc(100vh - 260px);">
+    <div class="app-overlay"></div>
+    <div class="app-content">
+        <div id="search-step">
+
+            <h2 style="font-size: 1.5rem;">Bienvenidos,</h2>
+            <p>Te conectamos con la región caribe</p>
+
+            <!-- Tipo de viaje -->
+            <div class="trip-type">
+                <label class="radio">
+                    <input type="radio" name="tripType" value="oneway">
+                    <span>Solo ida</span>
+                </label>
+
+                <label class="radio">
+                    <input type="radio" name="tripType" value="roundtrip" checked>
+                    <span>Ida y vuelta</span>
+                </label>
+            </div>
+
+            <!-- Origen -->
+            <label>Origen</label>
+            <div class="input-container">
+                <input class="form-control form-control-sm" id="originSelect" style="width:100%" />
+            </div>
+
+            <!-- Destino -->
+            <label>Destino</label>
+            <div class="destination-wrapper">
+                <div class="input-container" style="display: flex;align-items: center;gap: 0;">
+                    <input class="form-control form-control-sm" id="destinationSelect"
+                        style="width:100%;border-radius: 25px !important;" />
+                    <button id="swapBtn" type="button">⇄</button>
+                </div>
+            </div>
+
+            <label id="dateLabel">Fecha ida y vuelta</label>
+            <!-- Fecha -->
+            <input type="text" class="form-control" id="fechaViaje" readonly placeholder="----/----/--  ----/----/--"
+                readonly style="height: 42px !important;margin: 12px !important;width: stretch !important;">
+
+            <!-- Botón buscar -->
+            <button id="searchBtn" class="btn-primary" disabled>Buscar</button>
+
+        </div>
+
+    </div>
+</div>
+
+<div id="dateModal" class="date-modal hidden">
+    <div class="date-sheet">
+
+        <div class="date-header">
+            <div>
+                <h2>Selecciona fecha</h2>
+                <span id="tripTypeModal">Ida y vuelta</span>
+            </div>
+            <button id="closeDateModal"
+                style="transform: translate(350px, -60px);border: none;background: none;">✕</button>
+        </div>
+
+        <div id="calendarContainer"></div>
+
+        <button class="btn-accept" id="getValuesDates">
+            Aceptar
+        </button>
+
+    </div>
+</div>

@@ -1,0 +1,48 @@
+<div class="step flex-column active" id="step11">
+    <div class="step-content flex-grow-1">
+
+        <h5>Resumen de Pago</h5>
+        <p class="text-muted">Revisa el detalle antes de confirmar tu compra.</p>
+        <h4 id="destinoOrigen"></h4>
+
+        <ul class="list-group mb-3">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>Costo unitario</span><span>$<span id="summaryTicketsUnitary">0</span></span></p>
+            <li class="list-group-item d-flex justify-content-between">
+                <span>Pasajeros (<span id="summaryPassengers">0</span>)</span>
+                <strong>$<span id="summaryTickets">0</span></strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+                <span>Descuento</span>
+                <strong class="text-success">- $<span id="summaryDiscount">0</span></strong>
+            </li>
+            <li id="summaryTransferRow" class="list-group-item d-flex justify-content-between d-none">
+                <span>Servicio de traslado</span>
+                <strong>$<span id="summaryTransfer">0</span></strong>
+            </li>
+            <!-- Botón para expandir extras -->
+            <li class="list-group-item">
+                <button class="btn btn-link p-0" data-toggle="collapse" data-target="#extraDetails">
+                    Ver costos adicionales
+                </button>
+                <div id="extraDetails" class="collapse mt-2">
+                    <ul class="list-unstyled">
+                        <li>Equipaje: $<span id="extraBaggage">0</span></li>
+                        <li>Seguro: $<span id="extraInsurance">0</span></li>
+                        <li>Redes: $<span id="extraNetwork">0</span></li>
+                        <li>Impuestos: $<span id="extraTaxes">0</span></li>
+                    </ul>
+                </div>
+            </li>
+            <!-- Total -->
+            <li class="list-group-item d-flex justify-content-between bg-light">
+                <span><b>Total a pagar</b></span>
+                <strong>$<span id="summaryTotal">0</span></strong>
+            </li>
+        </ul>
+    </div>
+    <div class="step-footer py-2 text-right">
+        <button type="button" id="lastStep" class="btn btn-secondary">Atrás</button>
+        <button class="btn btn-primary next" id="nextStep">Ir a pagar</button>
+    </div>
+</div>

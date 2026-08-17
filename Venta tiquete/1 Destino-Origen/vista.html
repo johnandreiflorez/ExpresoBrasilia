@@ -1,0 +1,45 @@
+<div class="step flex-column active" id="step1">
+    <div class="step-content flex-grow-1">
+        <h5>Datos del viaje</h5>
+
+        <div class="form-group">
+            <label for="origin">Origen<span style="color: tomato;">*</span></label>
+            <div class="input-group">
+                <input id="origin" style="width:100%" />
+                <small class="form-text text-muted">Escribe o selecciona la ciudad de origen</small>
+                <div class="input-group-append w-100 justify-content-center mt-2">
+                    <button id="swapBtn" class="btn btn-outline-secondary border-none" type="button"
+                        title="Intercambiar">
+                        <i class="fa fa-exchange-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="destination">Destino<span style="color: tomato;">*</span></label>
+            <input id="destination" style="width:100%" />
+            <small class="form-text text-muted">Escribe o selecciona la ciudad de destino</small>
+        </div>
+
+        <div class="form-group">
+            <label>Fecha de viaje<span style="color: tomato;">*</span></label>
+            <div class="d-flex mb-2" id="dateOptions">
+                <button class="btn btn-outline-primary mr-2 date-option" data-val="today">Hoy</button>
+                <button class="btn btn-outline-primary mr-2 date-option" data-val="tomorrow">Mañana</button>
+                <button class="btn btn-outline-primary date-option" data-val="choose">Elegir</button>
+            </div>
+            <input id="datePicker" type="date" style="width:100%" />
+        </div>
+
+        <div class="form-group" id="returnGroup">
+            <label>Fecha de regreso</label>
+            <input id="returnDatePicker" type="date" style="width:100%" />
+        </div>
+    </div>
+
+
+    <div class="step-footer py-2 text-right">
+        <button type="button" id="searchRoutes" disabled class="btn btn-primary mt-3">Buscar rutas</button>
+    </div>
+</div>

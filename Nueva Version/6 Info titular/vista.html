@@ -1,0 +1,77 @@
+<div>
+    <div class="header-basic-expreso-brasilia d-flex justify-content-between align-items-center"
+        style="position: relative; background: #123d67;height: 80px;">
+        <img src="https://static.unitransco.com/wp-content/uploads/2025/09/u.png" alt="Unitransco" style="background: #fff;
+    border-radius: 25px;
+    margin: 16px;
+    padding: 5px;
+    width: 44px;">
+        <button id="lastStep2" class="btn btn-outline-primary"
+            style="background-color: #ffffff00 !important; border: none !important;"><span
+                style="margin-right: 3px;">Modificar Búsqueda </span><i class="fa fa-search"></i></button>
+    </div>
+    <div id="main-card" style="position: relative;
+    background: #ffffff;
+    padding: 2rem 1.5rem 6rem 1.5rem;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    min-height: calc(100vh - 260px);">
+
+        <div id="step6" class="step active">
+            <div class="card shadow-sm p-3">
+                <h2 style="font-size: 1.5rem;">Datos del titular de la factura</h2>
+                <form id="titularForm">
+                    <div class="form-group">
+                        <label>Tipo de identificación</label>
+                        <select class="form-control" id="titularTipoId" required>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Número de Identificación</label>
+                        <input type="text" id="titularNumeroId" class="form-control" required />
+                    </div>
+
+                    <!-- Campo DIG, solo visible si es NIT -->
+                    <div class="form-group d-none" id="digContainer">
+                        <label>DIG</label>
+                        <input type="text" id="titularDig" class="form-control" readonly />
+                    </div>
+
+                    <div class="form-group d-none" id="razonSocialContainer">
+                        <label>Razón social</label>
+                        <input type="text" id="titularRazonSocial" class="form-control" />
+                    </div>
+
+                    <!-- Persona natural -->
+                    <div id="personaNaturalFields">
+                        <div class="form-group">
+                            <label>Primer nombre</label>
+                            <input type="text" id="titularNombre1" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label>Segundo nombre</label>
+                            <input type="text" id="titularNombre2" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label>Primer apellido</label>
+                            <input type="text" id="titularApellido1" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label>Segundo apellido</label>
+                            <input type="text" id="titularApellido2" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Correo electrónico</label>
+                        <input type="email" id="titularCorreo" class="form-control" required />
+                    </div>
+                </form>
+            </div>
+            <div class="step-footer py-2 text-right">
+                <button type="button" id="lastStep6" class="btn btn-secondary">Atrás</button>
+                <button type="submit" id="submintTitular" class="btn btn-primary">Continuar</button>
+            </div>
+        </div>
+    </div>
+</div>

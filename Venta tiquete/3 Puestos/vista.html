@@ -1,0 +1,31 @@
+<!--PASO 3 AsientosIdaRegreso -->
+<div class="step flex-column active" id="step3">
+    <div class="step-content flex-grow-1">
+        <h5 id="title-step3">Selecciona tus asientos</h5>
+        <div class="card mb-3">
+            <div class="card-body">
+                <div id="seatLayout"></div>
+                <!-- Barra fija de selección de asientos -->
+                <div id="seatSummaryBar" class="seat-summary-bar mb-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-left">
+                            <p><span class="btn-seat"></span>Libres: <span id="seatsFree">0</span></p>
+                            <p><span class="btn-seat btn-primary"></span>Elegidos: <span id="seatsChosen">0</span></p>
+                            <p><span class="btn-seat btn-danger"></span>Ocupados: <span id="seatsTaken">0</span></p>
+                        </div>
+                        <div class="text-right" id="seatsTotalContainer">
+                            <h6 class="mb-0 font-weight-bold text-primary">Total: $<span id="seatsTotal">0</span></h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="step-footer py-2 text-right">
+        <button type="button" id="clearSeats" class="btn btn-outline-secondary mt-3">Limpiar</button>
+        <button type="button" id="lastStep3" class="btn btn-secondary mt-3 prev">Atrás</button>
+        <button type="button" id="lastRoute" class="btn btn-secondary mt-3">Atrás</button>
+        <button type="button" id="selectLines" disabled class="btn btn-primary mt-3">Siguiete</button>
+        <button type="button" id="nextRoute" class="btn btn-primary mt-3">Continuar al siguiente trayecto</button>
+    </div>
+</div>

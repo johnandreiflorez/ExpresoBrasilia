@@ -1,0 +1,57 @@
+<div id="step6" class="step active">
+    <div class="card shadow-sm p-3">
+        <h5>Datos del titular de la factura</h5>
+        <form id="titularForm">
+            <div class="form-group">
+                <label>Tipo de identificación</label>
+                <select class="form-control" id="titularTipoId" required>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Número de Identificación</label>
+                <input type="text" id="titularNumeroId" class="form-control" required />
+            </div>
+
+            <!-- Campo DIG, solo visible si es NIT -->
+            <div class="form-group d-none" id="digContainer">
+                <label>DIG</label>
+                <input type="text" id="titularDig" class="form-control" readonly />
+            </div>
+
+            <div class="form-group d-none" id="razonSocialContainer">
+                <label>Razón social</label>
+                <input type="text" id="titularRazonSocial" class="form-control" />
+            </div>
+
+            <!-- Persona natural -->
+            <div id="personaNaturalFields">
+                <div class="form-group">
+                    <label>Primer nombre</label>
+                    <input type="text" id="titularNombre1" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Segundo nombre</label>
+                    <input type="text" id="titularNombre2" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Primer apellido</label>
+                    <input type="text" id="titularApellido1" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Segundo apellido</label>
+                    <input type="text" id="titularApellido2" class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Correo electrónico</label>
+                <input type="email" id="titularCorreo" class="form-control" required />
+            </div>
+        </form>
+    </div>
+    <div class="step-footer py-2 text-right">
+        <button type="button" id="lastStep6" class="btn btn-secondary">Atrás</button>
+        <button type="submit" id="submintTitular" class="btn btn-primary">Continuar</button>
+    </div>
+</div>

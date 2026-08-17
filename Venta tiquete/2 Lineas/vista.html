@@ -1,0 +1,55 @@
+<div class="step flex-column active" id="step2">
+    <div class="step-content flex-grow-1">
+        <h5><span id="title-step2">Selecciona tu viaje de ida </span><span id="filterIcon"> <i
+                    class="fa fa-filter"></i></span></h5>
+        <!-- Filtros -->
+        <div class="card mb-3 d-none" id="filterCard">
+            <div class="card-body">
+                <h6>Filtros</h6>
+                <div class="form-group">
+                    <label>Hora de salida</label><br>
+                    <div class="btn-group btn-group-toggle d-flex flex-wrap" data-toggle="buttons">
+                        <label class="btn btn-outline-primary flex-fill m-1">
+                            <input type="checkbox" value="morning"> Mañana (7am-12pm)
+                        </label>
+                        <label class="btn btn-outline-primary flex-fill m-1">
+                            <input type="checkbox" value="afternoon"> Tarde (12pm-7pm)
+                        </label>
+                        <label class="btn btn-outline-primary flex-fill m-1">
+                            <input type="checkbox" value="night"> Noche (7pm-12am)
+                        </label>
+                        <label class="btn btn-outline-primary flex-fill m-1">
+                            <input type="checkbox" value="dawn"> Madrugada (12am-7am)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ordenar por</label>
+                    <select id="sortRoutes" class="form-control">
+                        <option value="price">Precio (menor a mayor)</option>
+                        <option value="duration">Duración (menor a mayor)</option>
+                        <option value="departure">Hora de salida (más próximo)</option>
+                        <option value="arrival">Hora de llegada (más próximo)</option>
+                    </select>
+                </div>
+                <div class="form-group d-none" id="directFilterGroup">
+                    <label>
+                        <input type="checkbox" id="directOnly">
+                        Directo sin rutas
+                    </label>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button id="clearFilters" class="btn btn-secondary btn-sm">Limpiar</button>
+                    <button id="applyFilters" class="btn btn-primary btn-sm">Aplicar</button>
+                </div>
+            </div>
+        </div>
+        <div class="list-group" id="listOutward"></div>
+        <div class="list-group" id="listReturn"></div>
+    </div>
+    <div class="step-footer py-2 text-right">
+        <button type="button" id="lastStep2" class="btn btn-secondary mt-3">Atrás</button>
+    </div>
+</div>

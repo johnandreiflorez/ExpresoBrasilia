@@ -1,0 +1,175 @@
+.seat-grid h6 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #02509D;
+    margin-bottom: 0.8rem;
+    text-align: left;
+}
+
+.btn-seat {
+    border: 2px solid #cfd8e3;
+    padding: 1px 10px;
+}
+
+/* ==== SILLAS ==== */
+#seatLayout {
+    display: flex;
+    justify-content: center;
+}
+
+.bus-layout {
+    background: #f2f4f7;
+    border-radius: 46px 46px 25px 25px;
+    border: 1px solid #000000;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    max-width: 150px;
+}
+
+.bus-layout:first-child {
+    border-bottom: solid 1px #000;
+}
+
+.img-driver {
+    padding-top: 5px;
+    height: 34px;
+    width: 100%;
+    max-width: 100px;
+    padding-bottom: 8px;
+}
+
+.bus-layout:last-child {
+    padding-bottom: 15px;
+}
+
+.seat-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 26px;
+    margin: 20px auto;
+    background: linear-gradient(145deg, #ffffff, #f2f5f9);
+    border-radius: 24px;
+    max-width: 520px;
+    border: 1px solid #e1e6ef;
+}
+
+.seat-row {
+    display: grid;
+    grid-template-columns: repeat(5, 68px);
+    gap: 18px;
+    justify-content: center;
+}
+
+.seat {
+    width: 68px;
+    height: 68px;
+    border-radius: 12px 12px 0px 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0466c8;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-size: 14px;
+    border: 2px solid #cfd8e3;
+    background: linear-gradient(145deg, #fdfdfd, #e9eef5);
+    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.9),
+        inset 3px 3px 6px rgba(0, 0, 0, 0.08),
+        0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.seat.free:hover {
+    border-color: #0466c8;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 14px rgba(4, 102, 200, 0.3);
+}
+
+.selected {
+    background: #d5e3fe;
+    border-color: #d5e3fe;
+}
+
+.taken {
+    background: #c2c6d2;
+    cursor: not-allowed;
+}
+
+.seat.driver {
+    height: 15px;
+}
+
+.seat.pasillo {
+    background: transparent !important;
+    border: none !important;
+    pointer-events: none;
+    box-shadow: none !important;
+}
+
+.seat-grid h6 {
+    font-weight: 700;
+    color: #02509D;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+/* ==== RESPONSIVE SILLAS Y BOTONES ==== */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 0.8rem;
+        margin-top: -20px;
+    }
+
+    .seat-row {
+        grid-template-columns: repeat(5, 48px);
+        gap: 10px;
+    }
+
+    .seat {
+        width: 40px;
+        height: 30px;
+        font-size: 12px;
+    }
+
+    .seat-grid {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .btn {
+        font-size: 0.9rem;
+        padding: 0.7rem 1.1rem;
+    }
+}
+
+.row-seat {
+    padding: 0px 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2px 0;
+    gap: 2px;
+}
+
+.seat.driver {
+    background: gold;
+    font-size: 18px;
+}
+
+/* Barra fija de resumen de asientos */
+.seat-summary-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 1050;
+    background: #f8f9fa;
+}
+
+.seat-summary-bar .card {
+    border-radius: 12px 12px 0 0;
+    margin: 0;
+}
+
+.seat-summary-bar .badge {
+    font-size: 0.75rem;
+    margin-right: 0.25rem;
+}

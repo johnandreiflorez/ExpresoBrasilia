@@ -1,0 +1,487 @@
+<header>
+    <h5>Expreso Brasilia</h5>
+    <small>Viajando con tus sueños</small>
+    <button class="btn btn-outline-secondary mt-3 d-none" id="resumenCompra"
+        style="position: fixed; top: 0; right: 15px; padding: 0.5rem; z-index: 1;">Ver compra</button>
+    <div id="timer" class="d-none"
+        style="font-size:10px;font-weight:bold;top: 50px;right: 25px;position: fixed;color: black;z-index: 1;">Tiempo:
+        <span id="timerValue">10:00</span></div>
+</header>
+
+<div class="container py-3">
+    <!-- ========== PASO 1 - DATOS DEL VIAJE (KENDO COMBOBOX + DATEPICKER) ========== -->
+    <div class="step flex-column active" id="step1">
+        <div class="step-content flex-grow-1">
+            <h5>Datos del viaje</h5>
+
+            <div class="form-group">
+                <label for="origin">Origen<span style="color: tomato;">*</span></label>
+                <div class="input-group">
+                    <input id="origin" style="width:100%" />
+                    <small class="form-text text-muted">Escribe o selecciona la ciudad de origen</small>
+                    <div class="input-group-append w-100 justify-content-center mt-2">
+                        <button id="swapBtn" class="btn btn-outline-secondary border-none" type="button"
+                            title="Intercambiar">
+                            <i class="fa fa-exchange-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="destination">Destino<span style="color: tomato;">*</span></label>
+                <input id="destination" style="width:100%" />
+                <small class="form-text text-muted">Escribe o selecciona la ciudad de destino</small>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de viaje<span style="color: tomato;">*</span></label>
+                <div class="d-flex mb-2" id="dateOptions">
+                    <button class="btn btn-outline-primary mr-2 date-option" data-val="today">Hoy</button>
+                    <button class="btn btn-outline-primary mr-2 date-option" data-val="tomorrow">Mañana</button>
+                    <button class="btn btn-outline-primary date-option" data-val="choose">Elegir</button>
+                </div>
+                <input id="datePicker" type="date" style="width:100%" />
+            </div>
+
+            <div class="form-group" id="returnGroup">
+                <label>Fecha de regreso</label>
+                <input id="returnDatePicker" type="date" style="width:100%" />
+            </div>
+        </div>
+
+
+        <div class="step-footer py-2 text-right">
+            <button type="button" id="searchRoutes" disabled class="btn btn-primary mt-3">Buscar rutas</button>
+        </div>
+    </div>
+
+    <!-- Paso 2 SELECCIONAR VIAJE DE IDA O VUELTA-->
+    <div class="step flex-column" id="step2">
+        <div class="step-content flex-grow-1">
+            <h5><span id="title-step2">Selecciona tu viaje de ida </span><span id="filterIcon"> <i
+                        class="fa fa-filter"></i></span></h5>
+            <!-- Filtros -->
+            <div class="card mb-3 d-none" id="filterCard">
+                <div class="card-body">
+                    <h6>Filtros</h6>
+                    <div class="form-group">
+                        <label>Hora de salida</label><br>
+                        <div class="btn-group btn-group-toggle d-flex flex-wrap" data-toggle="buttons">
+                            <label class="btn btn-outline-primary flex-fill m-1">
+                                <input type="checkbox" value="morning"> Mañana (7am-12pm)
+                            </label>
+                            <label class="btn btn-outline-primary flex-fill m-1">
+                                <input type="checkbox" value="afternoon"> Tarde (12pm-7pm)
+                            </label>
+                            <label class="btn btn-outline-primary flex-fill m-1">
+                                <input type="checkbox" value="night"> Noche (7pm-12am)
+                            </label>
+                            <label class="btn btn-outline-primary flex-fill m-1">
+                                <input type="checkbox" value="dawn"> Madrugada (12am-7am)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ordenar por</label>
+                        <select id="sortRoutes" class="form-control">
+                            <option value="price">Precio (menor a mayor)</option>
+                            <option value="duration">Duración (menor a mayor)</option>
+                            <option value="departure">Hora de salida (más próximo)</option>
+                            <option value="arrival">Hora de llegada (más próximo)</option>
+                        </select>
+                    </div>
+                    <div class="form-group d-none" id="directFilterGroup">
+                        <label>
+                            <input type="checkbox" id="directOnly">
+                            Directo sin rutas
+                        </label>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button id="clearFilters" class="btn btn-secondary btn-sm">Limpiar</button>
+                        <button id="applyFilters" class="btn btn-primary btn-sm">Aplicar</button>
+                    </div>
+                </div>
+            </div>
+            <div class="list-group d-none" id="listOutward"></div>
+            <div class="list-group d-none" id="listReturn"></div>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button type="button" id="lastStep2" class="btn btn-secondary mt-3">Atrás</button>
+        </div>
+    </div>
+
+    <!--PASO 3 AsientosIdaRegreso -->
+    <div class="step flex-column" id="step3">
+        <div class="step-content flex-grow-1">
+            <h5 id="title-step3">Selecciona tus asientos</h5>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div id="seatLayout"></div>
+                    <!-- Barra fija de selección de asientos -->
+                    <div id="seatSummaryBar" class="seat-summary-bar mb-1">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-left">
+                                <p><span class="btn-seat"></span>Libres: <span id="seatsFree">0</span></p>
+                                <p><span class="btn-seat btn-primary"></span>Elegidos: <span id="seatsChosen">0</span>
+                                </p>
+                                <p><span class="btn-seat btn-danger"></span>Ocupados: <span id="seatsTaken">0</span></p>
+                            </div>
+                            <div class="text-right" id="seatsTotalContainer">
+                                <h6 class="mb-0 font-weight-bold text-primary">Total: $<span id="seatsTotal">0</span>
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button type="button" id="clearSeats" class="btn btn-outline-secondary mt-3">Limpiar</button>
+            <button type="button" id="lastStep3" class="btn btn-secondary mt-3 prev">Atrás</button>
+            <button type="button" id="lastRoute" class="btn btn-secondary mt-3">Atrás</button>
+            <button type="button" id="selectLines" disabled class="btn btn-primary mt-3">Siguiete</button>
+            <button type="button" id="nextRoute" class="btn btn-primary mt-3">Continuar al siguiente trayecto</button>
+        </div>
+    </div>
+
+    <!-- Paso 4  Pasajeros-->
+    <div class="step flex-column" id="step4">
+        <div class="step-content flex-grow-1">
+            <h5>Datos de pasajeros</h5>
+            <p class="text-muted">Complete la información de cada pasajero.</p>
+            <!-- <button  class="btn btn-outline-primary btn-sm mb-3">
+                Copiar correo y celular del primer pasajero
+            </button> -->
+
+            <div class="form-check my-2" id="copyContactContainer">
+                <input type="checkbox" id="copyContact" class="form-check-input copy-first-passenger-data"
+                    style="margin: 0;">
+                <label class="form-check-label" for="copyContact">
+                    Copiar correo y celular del primer pasajero
+                </label>
+            </div>
+            <div id="passengerForms"></div> <!-- Aquí se generan los formularios dinámicos -->
+
+            <!-- Textos legales (dinámicos desde API) -->
+            <div id="legalTexts" class="mt-3 small text-muted"></div>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button type="button" class="btn btn-secondary" id="lastStep4">Atrás</button>
+            <button class="btn btn-primary next" id="addPassangers" disabled>Continuar</button>
+        </div>
+    </div>
+
+    <!-- PASO 5 TitularEsPasajero Pregunta titular de la factura -->
+    <div id="step5" class="step">
+        <div class="card shadow-sm p-3">
+            <h5>¿El titular de la factura es un pasajero?</h5>
+            <div class="d-flex gap-2 mt-3">
+
+            </div>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button class="btn btn-secondary" id="lastStep5">Atrás</button>
+            <button class="btn btn-secondary" id="btnTitularNoPasajero">No</button>
+            <button class="btn btn-primary" id="btnTitularEsPasajero">Sí</button>
+        </div>
+    </div>
+
+    <!-- Formulario Datos del titular (solo si no es pasajero) -->
+    <div id="step6" class="step">
+        <div class="card shadow-sm p-3">
+            <h5>Datos del titular de la factura</h5>
+            <form id="titularForm">
+                <div class="form-group">
+                    <label>Tipo de identificación</label>
+                    <select class="form-control" id="titularTipoId" required>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Número de Identificación</label>
+                    <input type="text" id="titularNumeroId" class="form-control" required />
+                </div>
+
+                <!-- Campo DIG, solo visible si es NIT -->
+                <div class="form-group d-none" id="digContainer">
+                    <label>DIG</label>
+                    <input type="text" id="titularDig" class="form-control" readonly />
+                </div>
+
+                <div class="form-group d-none" id="razonSocialContainer">
+                    <label>Razón social</label>
+                    <input type="text" id="titularRazonSocial" class="form-control" />
+                </div>
+
+                <!-- Persona natural -->
+                <div id="personaNaturalFields">
+                    <div class="form-group">
+                        <label>Primer nombre</label>
+                        <input type="text" id="titularNombre1" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>Segundo nombre</label>
+                        <input type="text" id="titularNombre2" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>Primer apellido</label>
+                        <input type="text" id="titularApellido1" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>Segundo apellido</label>
+                        <input type="text" id="titularApellido2" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Correo electrónico</label>
+                    <input type="email" id="titularCorreo" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-primary">Continuar</button>
+
+            </form>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button type="button" id="lastStep6" class="btn btn-secondary mt-3">Atrás</button>
+        </div>
+    </div>
+
+    <div id="step7" class="step">
+        <div class="card shadow-sm p-3">
+            <h5>Selecciones el titular de la factura</h5>
+            <div id="listPassangers" class="d-flex flex-column gap-2">
+                <!-- tarjetas de pasajeros generadas dinámicamente -->
+            </div>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button type="button" id="lastStep7" class="btn btn-secondary mt-3">Atrás</button>
+            <button class="btn btn-primary next" id="titularSeleccionado">Continuar</button>
+        </div>
+    </div>
+
+    <!-- Paso 8  Desea transaldo-->
+    <div class="step flex-column" id="step8">
+        <div class="step-content flex-grow-1">
+            <h5>¿Deseas traslado?</h5>
+            <p class="text-muted">Puedes contratar un servicio adicional de traslado.</p>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button type="button" id="lastStep8" class="btn btn-secondary mt-3">Atrás</button>
+            <button id="noTransfer" class="btn btn-primary">No, continuar</button>
+            <button id="yesTransfer" class="btn btn-danger next">Sí, agregar traslado</button>
+        </div>
+    </div>
+
+    <!-- PASO 9 INFORMACION DE TRASLADO -->
+    <div class="step flex-column" id="step9">
+        <div class="step-content flex-grow-1">
+            <h5>Datos del traslado</h5>
+            <!-- Subformulario traslado -->
+            <div class="form-group">
+                <label>Cantidad de pasajeros</label>
+                <input type="number" id="transferPassengers" class="form-control" min="1" value="1">
+            </div>
+            <div class="form-group">
+                <label>Ruta de traslado</label>
+                <input type="text" id="transferRoute" class="form-control" placeholder="Ej: Hotel → Terminal">
+            </div>
+            <div class="form-group">
+                <label>Hora de recogida</label>
+                <input type="time" id="transferTime" class="form-control">
+            </div>
+            <div class="alert alert-info">
+                <b>Costo estimado traslado:</b> $<span id="transferCost">0</span>
+            </div>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button type="button" id="lastStep9" class="btn btn-secondary prev mt-3">Atrás</button>
+            <button id="confirmTransfer" class="btn btn-primary btn-block next">Confirmar traslado y continuar</button>
+        </div>
+    </div>
+
+    <!-- PASO 10 Metodo de pago -->
+    <div class="step flex-column" id="step10">
+        <div class="step-content flex-grow-1">
+            <h5>Metodo de pago</h5>
+            <p class="text-muted">Serás redirigido a PayU para completar tu pago de forma segura.</p>
+
+            <!-- Botón visual -->
+            <div class="text-center mt-3">
+                <img src="https://prod-developers.s3.amazonaws.com/latam/images/BlancoVerde/Medios_Pago_Blanco_Verde_125x125.jpg"
+                    title="PayU - Medios de pago" alt="PayU - Medios de pago" style="width: 100%;" />
+            </div>
+
+            <!-- Formulario oculto PayU -->
+            <form id="payuForm" method="post" action="https://sandbox.checkout.payulatam.com/ppp-web-gateway-payu/">
+                <input name="merchantId" type="hidden" value="508029">
+                <input name="accountId" type="hidden" value="512321">
+                <input name="description" type="hidden" value="Compra de tiquetes">
+                <input name="referenceCode" type="hidden" id="payuReference" value="">
+                <input name="amount" type="hidden" id="payuAmount" value="10000.00">
+                <input name="tax" type="hidden" id="payuTax" value="0">
+                <input name="taxReturnBase" type="hidden" value="0">
+                <input name="currency" type="hidden" value="COP">
+                <input name="signature" type="hidden" id="payuSignature" value="">
+                <input name="test" type="hidden" value="1"> <!-- ⚠️ 0 en producción -->
+                <input name="buyerEmail" type="hidden" id="payuBuyerEmail" value="">
+                <input name="responseUrl" type="hidden"
+                    value="https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/respuesta">
+                <input name="confirmationUrl" type="hidden"
+                    value="https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/confirmPay">
+            </form>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button type="button" class="btn btn-secondary prev mt-3">Atrás</button>
+            <button class="btn btn-primary btn-block" id="btnPayuSubmit"> Confirmar y continuar</button>
+        </div>
+    </div>
+
+    <!-- Paso 11 RESUMEN-->
+    <div class="step flex-column" id="step11">
+        <div class="step-content flex-grow-1">
+
+            <h5>Resumen de Pago</h5>
+            <p class="text-muted">Revisa el detalle antes de confirmar tu compra.</p>
+
+            <ul class="list-group mb-3">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Pasajeros (<span id="summaryPassengers">0</span>)</span>
+                    <strong>$<span id="summaryTickets">0</span></strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Descuento</span>
+                    <strong class="text-success">- $<span id="summaryDiscount">0</span></strong>
+                </li>
+                <li id="summaryTransferRow" class="list-group-item d-flex justify-content-between d-none">
+                    <span>Servicio de traslado</span>
+                    <strong>$<span id="summaryTransfer">0</span></strong>
+                </li>
+                <!-- Botón para expandir extras -->
+                <li class="list-group-item">
+                    <button class="btn btn-link p-0" data-toggle="collapse" data-target="#extraDetails">
+                        Ver costos adicionales
+                    </button>
+                    <div id="extraDetails" class="collapse mt-2">
+                        <ul class="list-unstyled">
+                            <li>Equipaje: $<span id="extraBaggage">0</span></li>
+                            <!-- <li>Seguro: $<span id="extraInsurance">0</span></li> -->
+                            <!-- <li>Redes: $<span id="extraNetwork">0</span></li> -->
+                            <li>Impuestos: $<span id="extraTaxes">0</span></li>
+                        </ul>
+                    </div>
+                </li>
+                <!-- Total -->
+                <li class="list-group-item d-flex justify-content-between bg-light">
+                    <span><b>Total a pagar</b></span>
+                    <strong>$<span id="summaryTotal">0</span></strong>
+                </li>
+            </ul>
+        </div>
+        <div class="step-footer py-2 text-right">
+            <button class="btn btn-primary btn-block next">Ir a pagar</button>
+            <button type="button" id="lastStep11" class="btn btn-secondary prev mt-2">Atrás</button>
+        </div>
+    </div>
+
+
+    <!-- Paso 12 PROCESANDO PAGO-->
+    <div class="step flex-column" id="step12">
+        <div class="step-content flex-grow-1">
+            <h5>Procesando pago...</h5>
+            <div id="paymentStatus" class="text-center my-3">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Procesando...</span>
+                </div>
+                <p class="mt-2">Por favor espera</p>
+            </div>
+
+            <!-- Resultado aprobado -->
+            <div id="paymentApproved" class="d-none text-center">
+                <h5 class="text-success">✅ Pago aprobado</h5>
+                <p>Tu tiquete ha sido enviado a tu correo.</p>
+                <div class="qr-box">
+                    <img id="ticketQr" src="" alt="QR Code">
+                </div>
+            </div>
+
+            <!-- Resultado rechazado -->
+            <div id="paymentRejected" class="d-none text-center">
+                <h5 class="text-danger">❌ Pago rechazado</h5>
+                <p>Hubo un problema con tu transacción. Intenta nuevamente.</p>
+                <button id="retryPayment" class="btn btn-primary">Reintentar pago</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal resumen previo -->
+    <div class="modal fade" id="resumenModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+            <div class="modal-content shadow-lg rounded-lg">
+
+                <!-- Header -->
+                <div class="modal-header bg-expreso text-white">
+                    <h5 class="modal-title font-weight-bold">Resumen de tu compra</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="modal-body px-3 py-2">
+                    <div id="resumenLayout" class="d-flex flex-column gap-3">
+
+                        <!-- Pasajeros -->
+                        <div id="resumenPasajeros" class="card resumen-card">
+                            <div class="card-body p-2">
+                                <h6 class="card-title text-primary mb-2">
+                                    <i class="fas fa-user-friends mr-1"></i> Pasajeros
+                                </h6>
+                                <ul class="list-group list-group-flush small">
+                                    <!-- Cantidad y nombres de pasajeros -->
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Ida -->
+                        <div id="resumenIda" class="card resumen-card">
+                            <div class="card-body p-2">
+                                <h6 class="card-title text-success mb-2">
+                                    <i class="fas fa-arrow-right mr-1"></i> Viaje de ida
+                                </h6>
+                                <div class="small resumen-detalle">
+                                    <!-- Costo individual, sub total, descuentos, costos adicionales, total a pagar -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Regreso -->
+                        <div id="resumenRegreso" class="card resumen-card d-none">
+                            <div class="card-body p-2">
+                                <h6 class="card-title text-info mb-2">
+                                    <i class="fas fa-arrow-left mr-1"></i> Viaje de regreso
+                                </h6>
+                                <div class="small resumen-detalle">
+                                    <!-- Costo individual, sub total, descuentos, costos adicionales, total a pagar -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Totales -->
+                        <div id="resumenTotales" class="card resumen-card border-0 bg-light">
+                            <div class="card-body p-3">
+                                <h5 class="mb-2 font-weight-bold">Total a pagar</h5>
+                                <p class="h4 text-primary font-weight-bold mb-0">
+                                    $ <span id="totalGeneral">0</span>
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

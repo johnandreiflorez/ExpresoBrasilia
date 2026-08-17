@@ -1,0 +1,92 @@
+/* ==== FORMULARIOS ==== */
+.form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.4rem;
+    display: block;
+}
+
+.form-control,
+input[type="text"],
+input[type="number"],
+input[type="time"] {
+    border-radius: 14px;
+    border: 1px solid #ccd3db;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+    background: #fdfefe;
+    transition: all 0.25s ease;
+}
+
+.form-control:focus,
+input:focus {
+    border-color: #02509D;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(2, 80, 157, 0.2);
+}
+
+.selectable-passenger {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.selectable-passenger.active {
+    border-color: #007bff;
+    background: #eaf3ff;
+}
+
+.radio-indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    position: relative;
+}
+
+.selectable-passenger.active .radio-indicator::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    background: #007bff;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+}
+
+.form-check-input {
+    margin-right: 0 !important;
+}
+
+div.passenger-form>h6 {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ==== PASAJEROS ==== */
+.passenger-card {
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    padding: 1.6rem;
+    margin-bottom: 1.4rem;
+}
+
+.passenger-card h6 {
+    color: #02509D;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+/* TITULOS EN TARJETAS */
+.passenger-card h6,
+.seat-grid h6 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #02509D;
+    margin-bottom: 0.8rem;
+    text-align: left;
+}

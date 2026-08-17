@@ -1,0 +1,33 @@
+.selectable-passenger {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.selectable-passenger.active {
+    border-color: #007bff;
+    background: #eaf3ff;
+}
+
+.radio-indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    position: relative;
+}
+
+.selectable-passenger.active .radio-indicator::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    background: #007bff;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+}
+
+.form-check-input {
+    margin-right: 0 !important;
+}

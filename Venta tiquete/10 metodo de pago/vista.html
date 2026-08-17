@@ -1,0 +1,35 @@
+<div class="step flex-column active" id="step10">
+    <div class="step-content flex-grow-1">
+        <h5>Metodo de pago</h5>
+        <p class="text-muted">Serás redirigido a PayU para completar tu pago de forma segura.</p>
+
+        <!-- Botón visual -->
+        <div class="text-center mt-3">
+            <img src="https://prod-developers.s3.amazonaws.com/latam/images/BlancoVerde/Medios_Pago_Blanco_Verde_125x125.jpg"
+                title="PayU - Medios de pago" alt="PayU - Medios de pago" style="width: 100%;" />
+        </div>
+
+        <!-- Formulario oculto PayU -->
+        <form id="payuForm" method="post" action="https://sandbox.checkout.payulatam.com/ppp-web-gateway-payu/">
+            <input name="merchantId" type="hidden" value="508029">
+            <input name="accountId" type="hidden" value="512321">
+            <input name="description" type="hidden" value="Compra de tiquetes">
+            <input name="referenceCode" type="hidden" id="payuReference" value="">
+            <input name="amount" type="hidden" id="payuAmount" value="10000.00">
+            <input name="tax" type="hidden" id="payuTax" value="0">
+            <input name="taxReturnBase" type="hidden" value="0">
+            <input name="currency" type="hidden" value="COP">
+            <input name="signature" type="hidden" id="payuSignature" value="">
+            <input name="test" type="hidden" value="0"> <!-- ⚠️ 0 en producción -->
+            <input name="buyerEmail" type="hidden" id="payuBuyerEmail" value="">
+            <input name="responseUrl" type="hidden"
+                value="https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/respuesta">
+            <input name="confirmationUrl" type="hidden"
+                value="https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/confirmPay">
+        </form>
+    </div>
+    <div class="step-footer py-2 text-right">
+        <button type="button" class="btn btn-secondary" id="btnBack">Atrás</button>
+        <button class="btn btn-primary" id="btnPayuSubmit"> Confirmar y continuar</button>
+    </div>
+</div>

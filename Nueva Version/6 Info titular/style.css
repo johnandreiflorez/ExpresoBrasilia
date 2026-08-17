@@ -1,0 +1,26 @@
+/* ==== FORMULARIOS ==== */
+.form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.4rem;
+    display: block;
+}
+
+.form-control,
+input[type="text"],
+input[type="number"],
+input[type="time"] {
+    border-radius: 14px;
+    border: 1px solid #ccd3db;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+    background: #fdfefe;
+    transition: all 0.25s ease;
+}
+
+.form-control:focus,
+input:focus {
+    border-color: #02509D;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(2, 80, 157, 0.2);
+}

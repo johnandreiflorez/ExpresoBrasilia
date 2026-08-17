@@ -1,0 +1,91 @@
+<div>
+    <div class="header-basic-expreso-brasilia d-flex justify-content-between align-items-center"
+        style="position: relative; background: #123d67;height: 80px;">
+        <img src="https://static.unitransco.com/wp-content/uploads/2025/09/u.png" alt="Unitransco" style="background: #fff;
+    border-radius: 25px;
+    margin: 16px;
+    padding: 5px;
+    width: 44px;">
+        <button id="lastStep2" class="btn btn-outline-primary"
+            style="background-color: #ffffff00 !important; border: none !important;"><span
+                style="margin-right: 3px;">Modificar Búsqueda </span><i class="fa fa-search"></i></button>
+    </div>
+    <div id="main-card" style="position: relative;
+    background: #ffffff;
+    padding: 2rem 1.5rem 6rem 1.5rem;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    min-height: calc(100vh - 260px);">
+        <div class="app-overlay"></div>
+        <div class="app-content">
+            <div id="select-lines">
+                <div class="d-flex">
+                    <p class="text-muted"><span id="departure">Origen</span> → <span id="arrival">Destino</span></p>
+                </div>
+                <div class="d-flex" style="justify-content: space-between; gap: 50px; align-items: flex-end;">
+                    <div>
+                        <h2 style="font-size: 1.5rem;">Seleccionar horario de <span id="title-step2">Ida</span></h2>
+                        <p class="text-muted"><span id="date-step2">00/00/0000</span></p>
+                    </div>
+                    <div>
+                        <p class="text-super-muted"><span id="count-lines">0 de 0</span> resultados</p>
+                        <button id="filterIcon" class="btn btn-secondary"
+                            style="background-color: #e8c501 !important; color: #000 !important;"><i
+                                class="fa fa-settings"></i><span style="margin-right: 3px;">Filtros </span></button>
+                    </div>
+                </div>
+                <div class="list-group" id="listOutward"></div>
+                <div class="list-group" id="listReturn"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Filtros -->
+<div id="filterCard" class="detalles-modal hidden">
+    <div class="detalles-sheet">
+
+        <div class="detalles-header">
+            <div>
+                <h2 class="title-intinerary">Filtros</h2>
+            </div>
+            <button id="closeFilterModal"
+                style="transform: translate(280px, -26px);border: none;background: none;">✕</button>
+        </div>
+
+        <div class="form-group">
+            <label>Hora de salida</label><br>
+            <div class="btn-group btn-group-toggle d-flex flex-wrap" data-toggle="buttons">
+                <label class="btn btn-outline-primary flex-fill m-1">
+                    <input type="checkbox" value="morning"> Mañana (7am-12pm)
+                </label>
+                <label class="btn btn-outline-primary flex-fill m-1">
+                    <input type="checkbox" value="afternoon"> Tarde (12pm-7pm)
+                </label>
+                <label class="btn btn-outline-primary flex-fill m-1">
+                    <input type="checkbox" value="night"> Noche (7pm-12am)
+                </label>
+                <label class="btn btn-outline-primary flex-fill m-1">
+                    <input type="checkbox" value="dawn"> Madrugada (12am-7am)
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Ordenar por</label>
+            <select id="sortRoutes" class="form-control">
+                <option value="price">Precio (menor a mayor)</option>
+                <option value="duration">Duración (menor a mayor)</option>
+                <option value="departure">Hora de salida (más próximo)</option>
+                <option value="arrival">Hora de llegada (más próximo)</option>
+            </select>
+        </div>
+        <div class="form-group d-none" id="directFilterGroup">
+            <label>
+                <input type="checkbox" id="directOnly">
+                Directo sin rutas
+            </label>
+        </div>
+        <button id="clearFilters" class="btn btn-primary btn-sm ver-detalles"
+            style="width: 100% !important;">Limpiar</button>
+        <button id="applyFilters" class="btn-accept">Aplicar</button>
+    </div>
+</div>

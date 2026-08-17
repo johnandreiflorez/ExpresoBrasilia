@@ -1,0 +1,54 @@
+<div>
+    <div class="header-basic-expreso-brasilia d-flex justify-content-between align-items-center"
+        style="position: relative; background: #123d67;height: 80px;">
+        <img src="https://static.unitransco.com/wp-content/uploads/2025/09/u.png" alt="Unitransco" style="background: #fff;
+    border-radius: 25px;
+    margin: 16px;
+    padding: 5px;
+    width: 44px;">
+        <button id="lastStep2" class="btn btn-outline-primary"
+            style="background-color: #ffffff00 !important; border: none !important;"><span
+                style="margin-right: 3px;">Modificar Búsqueda </span><i class="fa fa-search"></i></button>
+    </div>
+    <div id="main-card" style="position: relative;
+    background: #ffffff;
+    padding: 2rem 1.5rem 6rem 1.5rem;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    min-height: calc(100vh - 260px);">
+        <div class="step flex-column active" id="step3">
+            <div class="step-content flex-grow-1">
+                <h2 id="title-step3" style="font-size: 1.5rem;">Selecciona tus asientos de ida</h2>
+                <p>debes elegir al menos 1 silla</p>
+                <div class="d-flex justify-content-between p-3">
+                    <p><i class="fa fa-user"></i> Pasajeros <span id="count-passengers">0</span></p>
+                    <p><strong id="total-costo">$ 0</strong></p>
+                </div>
+                <p class="text-center m-3" id="origen-destino">Origen | Destino</p>
+                <div class="card mb-3" style="border: none !important; box-shadow: none !important;">
+                    <div class="card-body pt-0" style="border: none !important; box-shadow: none !important;">
+                        <div id="seatLayout"></div>
+                        <!-- Barra fija de selección de asientos -->
+                        <div id="seatSummaryBar" class="seat-summary-bar m-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <p><span class="btn-seat"></span>Libres</p>
+                                <p><span class="btn-seat selected"></span>Elegidos</p>
+                                <p><span class="btn-seat taken"></span>Ocupados</p>
+                            </div>
+                        </div>
+                        <button id="resumenCompra" class="btn btn-primary btn-sm ver-detalles" data-target="${uniqueId}"
+                            style="border: none;background: none !important;color: #143b5f !important;font-size: 12px !important;text-align: start;">Ver
+                            detalle</button>
+                    </div>
+                </div>
+            </div>
+            <div class="step-footer py-2 text-right">
+                <button type="button" id="clearSeats" class="d-none btn btn-outline-secondary mt-3">Limpiar</button>
+                <button type="button" id="lastStep3" class="d-none btn btn-secondary mt-3 prev">Atrás</button>
+                <button type="button" id="lastRoute" class="d-none btn btn-secondary mt-3">Atrás</button>
+                <button type="button" id="selectLines" disabled class="btn btn-primary mt-3">Siguiete</button>
+                <button type="button" id="nextRoute" class="btn btn-primary mt-3">Continuar al siguiente
+                    trayecto</button>
+            </div>
+        </div>
+    </div>
+</div>
