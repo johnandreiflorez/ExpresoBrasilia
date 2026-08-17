@@ -9,7 +9,7 @@ console.log("Iniciar con la informacón de los pasajeros");
     const pouch = new G_PouchService();
     const compra = await pouch.obtenerCompraActiva();
     if (!compra) {
-        await pouch.limpiarExpiradas()
+        await pouch.limpiarExpiradas();
         goLocation('#/page/destino/ExpresoBrasilia_Lappiz');
         //document.getElementById('resumenCompra').classList.add('d-none');
     }
@@ -342,47 +342,47 @@ console.log("Iniciar con la informacón de los pasajeros");
         });
     }
 
-    async function getTaxByAge(curretnDate, index, currentDataLinea) {
+    async function getTaxByAge(curretnDate, index) {
 
         if (!curretnDate) return;
         //llamar api para obtener tarifa
-        //const viaje = isReturn ? state.viajeRegreso : state.viajeIda;
-        //const lineas = viaje.lineas || [];
+        const viaje = state.viajeIda;
+        const lineas = viaje.lineas || [];
         let nameFunction = 'Tarifa';
         let lappizFunctionId = '159aed1f-241a-4260-8e4b-e09d5fd335e9';
         let method = 'POST';
         //lineas.forEach(linea => {
-            // Metodo encargado para ejecutar una lappoz function
-            // const currentDataLinea = linea.data || null;
-            if (!currentDataLinea) continue;
-            let body = {
-                "codEmpresa": currentDataLinea.empresa,
-                "codDestino": currentDataLinea.codigoDestino,
-                "fecha": currentDataLinea.fechaViaje,
-                "codPromocion": null,
-                "codConvenio": null,
-                "ruta": currentDataLinea.ruta,
-                "hora": currentDataLinea.hora,
-                "fechaNacimiento": curretnDate,
-                "valorLista": currentDataLinea.tarifa.valorTarifa,
-                "codAgencia": '', // Que se debe poner acá??
-                "posicion": index, // Esto es el numero del asieto seleccionado? si no es asi que es?
-                "valorListaConexion": 0, // Como calculo este valor?
-                "valorTarifaDesconexion": 0, // Como calculo este valor?
-                "valorTarifaConexion": 0,// Como calculo este valor?
-                "cortesia": 'N'
-            }
-            let config = { nameFunction, lappizFunctionId, body, method }
-            const response = await execLF(config);
-            if (response.error == true) {
-                Swal.fire({
-                    title: "Problemas al obtener la tarifa",
-                    text: response.message,
-                    icon: "warning",
-                });
-                return;
-            }
-            return response.data;
+        // Metodo encargado para ejecutar una lappoz function
+        const currentDataLinea = lineas[0].data || null;
+        if (!currentDataLinea) return;
+        let body = {
+            "codEmpresa": currentDataLinea.empresa,
+            "codDestino": currentDataLinea.codigoDestino,
+            "fecha": currentDataLinea.fechaViaje,
+            "codPromocion": null,
+            "codConvenio": null,
+            "ruta": currentDataLinea.ruta,
+            "hora": currentDataLinea.hora,
+            "fechaNacimiento": formatDateISO(curretnDate),
+            "valorLista": currentDataLinea.tarifa.valorTarifa,
+            "codAgencia": '', // Que se debe poner acá??
+            "posicion": 1, // Esto es el numero del asieto seleccionado? si no es asi que es?
+            "valorListaConexion": 0, // Como calculo este valor?
+            "valorTarifaDesconexion": 0, // Como calculo este valor?
+            "valorTarifaConexion": 0,// Como calculo este valor?
+            "cortesia": 'N'
+        }
+        let config = { nameFunction, lappizFunctionId, body, method }
+        const response = await execLF(config);
+        if (response.error == true) {
+            Swal.fire({
+                title: "Problemas al obtener la tarifa",
+                text: response.message,
+                icon: "warning",
+            });
+            return;
+        }
+        return response.data;
         //});
         // if(state.fechaRegreso && state.isReturnSelected)
         //     getTaxByAge(curretnDate, index, true);
@@ -725,27 +725,27 @@ console.log("Iniciar con la informacón de los pasajeros");
      * Valida que haya al menos un pasajero mayor de edad.
      * @returns {boolean} - true si hay un mayor de edad, false en caso contrario.
      */
-    function validatePassengerAges() {
+    async function validatePassengerAges() {
         const birthDates = document.querySelectorAll('input[id^="birthdate-"]');
         const today = new Date();
-        let hasAdult = false;
-        let index = 0;
-        birthDates.forEach((input) => {
+        let hasAdult = true;
+        let letterAutorizationRequired = false;
+        let i = 0;
+        for  (const input of birthDates) {
             const kendoDatePicker = kendo.jQuery(input).data("kendoDatePicker");
             const birthDate = kendoDatePicker.value();
-            index++;
-            if (birthDate && !hasAdult) {
-                const age = today.getFullYear() - birthDate.getFullYear();
-                const m = today.getMonth() - birthDate.getMonth();
-                const d = today.getDate() - birthDate.getDate();
-
-                if (age > 18 || (age === 18 && (m > 0 || (m === 0 && d >= 0)))) {
-                    hasAdult = true;
-                    return;
-                }
-                hasAdult = false;
+            const responseTaxAge = await getTaxByAge(birthDate, i);
+            if(responseTaxAge.presentarDocumentoTaquilla == true){
+                letterAutorizationRequired = true;
             }
-        });
+
+            if (responseTaxAge.aplicaCustodio == 'S') {
+                hasAdult = false;
+                return;
+            }
+            hasAdult = true;
+            i++;
+        };
 
         if (!hasAdult) {
             Swal.fire({
@@ -755,6 +755,14 @@ console.log("Iniciar con la informacón de los pasajeros");
                 confirmButtonText: "Entendido",
             });
             return;
+        }
+        if (!letterAutorizationRequired) {
+            Swal.fire({
+                title: "Atención",
+                text: "El menor debe presentar formato de permiso de padres en taquilla, antes del abordaje",
+                icon: "warning",
+                confirmButtonText: "Entendido",
+            });
         }
         addPassagerPayload();
         goLocation("#/page/estitular/ExpresoBrasilia_Lappiz");
@@ -860,12 +868,12 @@ console.log("Iniciar con la informacón de los pasajeros");
             seatsByTrayect,
             index
         );
-        const currentAge = getAge(kendo.jQuery(`#birthdate-${numPassengers}`).data("kendoDatePicker").value())
+        //const currentAge = getAge(kendo.jQuery(`#birthdate-${numPassengers}`).data("kendoDatePicker").value())
         datosAgrupados.forEach((linea) => {
             linea.data.forEach((currentTrayecto) => {
                 console.log(currentTrayecto);
                 if (currentTrayecto) {
-                    const tarifa_pax = getTaxByAge(currentAge, currentTrayecto.numero, currentTrayecto)
+                    //const tarifa_pax = getTaxByAge(currentAge, currentTrayecto.numero, currentTrayecto)
                     const newLinea = {
                         //"codClaseTDC1": "", //BORRADO
                         //"tipoTDC1": "", //BORRADO
