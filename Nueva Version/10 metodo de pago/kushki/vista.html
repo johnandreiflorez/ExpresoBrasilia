@@ -17,10 +17,62 @@
     min-height: calc(100vh - 260px);">
         <div class="step flex-column active" id="step10">
             <div class="step-content flex-grow-1">
-                <h2 style="font-size: 1.5rem;">Metodo de pago</h2>
-                
+                <div class="payment-container">
+
+                    <h2 class="payment-title">
+                        Selecciona tu forma de pago
+                    </h2>
+
+                    <div class="payment-grid">
+
+                        <button class="payment-card" data-payment="kushki">
+                            <div class="payment-logo-container">
+                                <img src="https://soporte.kushkipagos.com/hc/theming_assets/01HZKM75ZWKHJVEKAXDT5N8S56" alt="Kushki" class="payment-logo payment-logo-kushki">
+                            </div>
+
+                            <span class="payment-name">
+                                Kushki
+                            </span>
+                        </button>
+
+                        <button class="payment-card selected" data-payment="nequi">
+                            <div class="payment-logo-container">
+                                <img src="https://runtimetest.lappiz.io/assets/images/expreso/nequi.svg" alt="Nequi" class="payment-logo payment-logo-nequi">
+                            </div>
+
+                            <span class="payment-name">
+                                Nequi
+                            </span>
+                        </button>
+
+                        <button class="payment-card" data-payment="transferencia">
+                            <div class="payment-logo-container">
+                                <img src="https://runtimetest.lappiz.io/assets/images/expreso/pse.svg" alt="Transferencia"
+                                    class="payment-logo payment-logo-transferencia">
+                            </div>
+
+                            <span class="payment-name">
+                                Transferencia
+                            </span>
+                        </button>
+
+                        <button class="payment-card" data-payment="addi">
+                            <div class="payment-logo-container">
+                                <img src="https://runtimetest.lappiz.io/assets/images/expreso/addi.svg" alt="Addi" class="payment-logo payment-logo-addi">
+                            </div>
+
+                            <span class="payment-name">
+                                Pagar en cuotas
+                            </span>
+                        </button>
+
+                    </div>
+
+                </div>
+
                 <!-- Formulario oculto Kushki -->
-                <form action="https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/callbackKushki" method="post" id="my-form">
+                <form action="https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/callbackKushki"
+                    method="post" id="my-form">
                     <input type="hidden" name="cart_id" value="123">
                 </form>
             </div>
