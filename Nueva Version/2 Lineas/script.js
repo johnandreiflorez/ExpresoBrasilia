@@ -206,18 +206,18 @@
             const card = document.createElement("div");
             card.className = "card mb-3 shadow-sm";
             const amenityIcons = {
-                ACP: "fa-tv",
-                WIF: "fa-wifi",
-                EAB: "fa-headphones",
-                TMC: "fa-plug",
+                ACP: "video",
+                WIF: "wifi",
+                EAB: "pelicula",
+                TMC: "play",
             };
             let amenitiesHtml = '';
             const aminidades = consolidateAmenities(lineas);
             if (Array.isArray(aminidades) && aminidades.length > 0) {
                 amenitiesHtml += '<div class="amenities-list" style="line-height: 2px;"> ';
                 aminidades.forEach((amen) => {
-                    const iconClass = amenityIcons[amen.codigo] || "fa-question-circle";
-                    amenitiesHtml += `<span class="amenity-badge small"><i class="fas ${iconClass}"></i> ${escapeHtml(amen.descripcion)}</span>`;
+                    const iconClass = amenityIcons[amen.codigo] || "video";
+                    amenitiesHtml += `<span class="amenity-badge small"><img src="https://runtimetest.lappiz.io/assets/images/expreso/${iconClass}.svg" alt="${amen.descripcion}" style="width: 16px; height: 16px;"> ${escapeHtml(amen.descripcion)}</span>`;
                 });
                 amenitiesHtml += '</div>';
             }
@@ -409,15 +409,16 @@
 
         let html = `<div class="timeline">`;
 
-        lineas.forEach((l) => {
+        lineas.forEach((l, idx) => {
 
             const salida = formatTime12h(l.horaSalida || l.hora);
             const llegada = formatTime12h(l.horaLlegada);
             const fechaSalida = l.fechaSalida || l.fecha;
             const fechaLlegada = l.fechaLlegada;
-
+            const classNameFirst = idx === 0 ? "timeline-item first" : idx === lineas.length - 1 ? "timeline-item last" : "timeline-item middle";
+            const classNameSecond = idx === lineas.length - 1 ? "timeline-item last" : "timeline-item middle";
             html += `
-            <div class="timeline-item">
+            <div class="${classNameFirst}">
                 <h3 class="subtitle-intinerary">Salida</h3>
                 <p>${escapeHtml(fechaSalida)} - Hora: ${escapeHtml(salida)}</p>
                 <p><strong>${escapeHtml(l.descOrigen || "")}</strong></p>
@@ -431,7 +432,7 @@
                 </div>
             </div>
 
-            <div class="timeline-item">
+            <div class="${classNameSecond}">
                 <h3 class="subtitle-intinerary">Llegada</h3>
                 <p>${escapeHtml(fechaLlegada)} - Hora: ${escapeHtml(llegada)}</p>
                 <p><strong>${escapeHtml(l.descDestino || "")}</strong></p>

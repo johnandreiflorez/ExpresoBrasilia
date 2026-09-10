@@ -164,20 +164,39 @@
     background: #1b365d;
 }
 
-.timeline-item {
-    position: relative;
-    margin-bottom: 30px;
-}
-
 .timeline-item::before {
     content: "";
     position: absolute;
-    left: -20px;
-    top: 5px;
-    width: 14px;
-    height: 14px;
-    background: #1b365d;
+    left: -26px;
+    top: 0px;
+    width: 20px;
+    height: 20px;
+    padding: 0px;
+    background-color: #1b365d;
+    background-size: 9px;
+    background-repeat: no-repeat;
+    background-position: center;
     border-radius: 50%;
+}
+
+/* Primer elemento */
+.timeline-item.first::before {
+    background-image: url('https://runtimetest.lappiz.io/assets/images/expreso/traslado.svg');
+}
+
+/* Elementos del medio */
+.timeline-item.middle::before {
+    background-image: url('https://runtimetest.lappiz.io/assets/images/expreso/parada.svg');
+}
+
+/* Último elemento */
+.timeline-item.last::before {
+    background-image: url('https://runtimetest.lappiz.io/assets/images/expreso/llegada.svg');
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
 }
 
 .subtitle-intinerary {
