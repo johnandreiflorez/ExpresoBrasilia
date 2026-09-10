@@ -166,10 +166,10 @@
             return currentTiquet;
         });
         await pouch.guardarCompra({ ...compra });
-        goLocation("#/page/resumenCompra/ExpresoBrasilia_Lappiz");
+        goLocation("#/page/textoLegal/ExpresoBrasilia_Lappiz");
     });
 
     document.getElementById("lastStep6").addEventListener("click", () => {
-        goLocation("#/page/estitular/ExpresoBrasilia_Lappiz");
+        goLocation("#/page/pasajeros/ExpresoBrasilia_Lappiz");
     })
 })();

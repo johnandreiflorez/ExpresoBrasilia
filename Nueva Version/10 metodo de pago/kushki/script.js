@@ -60,7 +60,7 @@ const PUBLIC_KEY = "fc746c9c632e4163a7565514ca34a2e5";
         }
     }
     document.getElementById("btnBack").addEventListener("click", () => {
-        goLocation('#/page/destino/ExpresoBrasilia_Lappiz');
+        goLocation('#/page/resumen/ExpresoBrasilia_Lappiz');
     });
 
     const paymentCards = document.querySelectorAll('.payment-card');

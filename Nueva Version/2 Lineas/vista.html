@@ -11,7 +11,7 @@
                 style="margin-right: 3px;">Modificar Búsqueda </span><i class="fa fa-search"></i></button>
     </div>
     <div id="main-card" style="position: relative;
-    background: #ffffff;
+    background: #fcfcfc;
     padding: 2rem 1.5rem 6rem 1.5rem;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     min-height: calc(100vh - 260px);">
@@ -21,16 +21,17 @@
                 <div class="d-flex">
                     <p class="text-muted"><span id="departure">Origen</span> → <span id="arrival">Destino</span></p>
                 </div>
-                <div class="d-flex" style="justify-content: space-between; gap: 50px; align-items: flex-end;">
+                <div class="d-flex" style="justify-content: space-between; gap: 16px; align-items: flex-end;">
                     <div>
                         <h2 style="font-size: 1.5rem;">Seleccionar horario de <span id="title-step2">Ida</span></h2>
                         <p class="text-muted"><span id="date-step2">00/00/0000</span></p>
                     </div>
                     <div>
-                        <p class="text-super-muted"><span id="count-lines">0 de 0</span> resultados</p>
+                        <p class="text-super-muted" style="text-align: end;"><span id="count-lines">0 de 0</span> resultados</p>
                         <button id="filterIcon" class="btn btn-secondary"
-                            style="background-color: #e8c501 !important; color: #000 !important;"><i
-                                class="fa fa-settings"></i><span style="margin-right: 3px;">Filtros </span></button>
+                            style="background-color: #e8c501 !important; color: #000 !important;border: none; border-radius: 10px;">
+                            <img src="https://runtimetest.lappiz.io/assets/images/expreso/filtro.svg" alt="⚙️">
+                            <span style="margin-right: 3px;">Filtros </span></button>
                     </div>
                 </div>
                 <div class="list-group" id="listOutward"></div>
@@ -45,7 +46,7 @@
 
         <div class="detalles-header">
             <div>
-                <h2 class="title-intinerary">Filtros</h2>
+                <h2 class="title-intinerary"><img style="height: 10px;" src="https://runtimetest.lappiz.io/assets/images/expreso/filtro.svg" alt="🔎"> Filtros</h2>
             </div>
             <button id="closeFilterModal"
                 style="transform: translate(280px, -26px);border: none;background: none;">✕</button>

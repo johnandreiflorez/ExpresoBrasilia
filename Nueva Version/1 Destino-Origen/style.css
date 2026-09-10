@@ -22,7 +22,11 @@
     height: 2.6rem;
     transform: translate(-13px, -2px);
     position: absolute;
-    right: 49px;
+    right: 24px;
+}
+
+#swapBtn img {
+    height: 10px;
 }
 
 #searchBtn:disabled {
@@ -100,4 +104,25 @@
 .k-select,
 .k-combobox .k-state-hover .k-select {
     background-color: #ced3db00;
+}
+
+.k-animation-container {
+    width: 283px !important;
+    left: 50% !important;
+    transform: translate(-51%) !important;
+}
+
+.k-list-container.k-popup.k-group.k-reset{
+    border-color: rgb(241, 243, 246) !important;
+    background-color: rgb(241, 243, 246) !important;
+    width: stretch !important;
+    min-width: stretch !important;
+}
+
+.k-list-scroller{
+    background: #f1f3f6;
+}
+
+.k-dropdown-wrap.k-state-default.k-state-hover{
+    box-shadow: none !important;
 }

@@ -3,16 +3,18 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
     // ---------------------------
     // Config y servicios
     // ---------------------------
-    await G_addHeaderPages();
-    //G_addIdApp_page();
-    const pouchService = new G_PouchService();
-    const compraActiva = await pouchService.obtenerCompraActiva();
-    if (!compraActiva) await pouchService.limpiarExpiradas();
     const API = {
         origenes: "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/getOrigenes?empresa=EC",
         destinos: "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/getDestinos?empresa=EC&origen=",
         vigencia: "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/vigenciaVenta"
     };
+    loadOrigenes();
+    loadDestinos('CTG');
+    await G_addHeaderPages();
+    //G_addIdApp_page();
+    const pouchService = new G_PouchService();
+    const compraActiva = await pouchService.obtenerCompraActiva();
+    if (!compraActiva) await pouchService.limpiarExpiradas();
     const searchState = {
         tripType: compraActiva && (compraActiva.isReturnSelected || compraActiva.fechaRegreso) ? "roundtrip" : "oneway",
         origin: compraActiva?.origen || null,
@@ -26,7 +28,6 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
 
     async function initSearchStep() {
         await loadFlatpickr();
-        await loadOrigenes();
         await restoreCompraActiva();
         initFecha(searchState.tripType === "oneway" ? "single" : "range");
         attachEvents();
@@ -349,7 +350,7 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
             dataValueField: "codigo",
             dataSource: data,
             filter: "contains",
-            placeholder: "Selecciona origen...",
+            placeholder: "----",
             minLength: 1,
             autoBind: true,
             noDataTemplate: "No hay coincidencias",
@@ -405,7 +406,7 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
             widget.setDataSource(dataSource);
 
             // Opcional: Restaurar placeholder original o habilitar si estaba deshabilitado
-            widget.input.attr("placeholder", "Selecciona origen...");
+            widget.input.attr("placeholder", "----");
         } else {
             console.error("No se puede actualizar: El widget no ha sido inicializado en", idTarget);
         }

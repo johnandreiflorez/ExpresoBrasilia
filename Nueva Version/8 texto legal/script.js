@@ -29,7 +29,7 @@
     }
     document.getElementById("btnCancelar").addEventListener("click", () => {
         if (compra.titularEsPasajero)
-            goLocation("#/page/listaPasajeros/ExpresoBrasilia_Lappiz");
+            goLocation("#/page/pasajeros/ExpresoBrasilia_Lappiz");
         else
             goLocation('#/page/titular/ExpresoBrasilia_Lappiz');
     });

@@ -2150,8 +2150,7 @@ async function compareWordVersions(
         );
 
     return {
-        currentComments: currentComments,
-        previousComments: previousComments,
+
         comentariosEliminados:
             removed,
 

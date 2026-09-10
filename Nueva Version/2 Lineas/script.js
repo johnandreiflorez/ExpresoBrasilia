@@ -235,13 +235,13 @@
             <div>
               <p style="line-height: 2px;" class="mb-1"><strong>${escapeHtml(salida)}</strong></p>
               <p class="mb-1"><strong>${compra.isReturnSelected ? compra.destino : compra.origen}</strong></p>
-              <p style="line-height: 2px;" class="text-muted">Terminal x</p>
+              <p style="line-height: 2px;" class="text-muted">${trayecto.terminalOrigen || ''}</p>
             </div>
             <div><p class="text-muted">– ${lineas.length} ${lineas.length > 1 ? "rutas" : "ruta"} →</p></div>
             <div>
               <p style="line-height: 2px;" class="mb-1"><strong>${escapeHtml(llegada)}</strong></p>
               <p class="mb-1"><strong>${compra.isReturnSelected ? compra.origen : compra.destino}</strong></p>
-              <p style="line-height: 2px;" class="text-muted">Terminal x</p>
+              <p style="line-height: 2px;" class="text-muted">${trayecto.terminalDestino || ''}</p>
             </div>
           </div>
           

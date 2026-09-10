@@ -28,6 +28,10 @@ console.log("Iniciar con la informacón de los pasajeros");
         selectedSeatsIda: Array.isArray(compra.selectedSeatsIda) ? [...compra.selectedSeatsIda] : [],
         selectedSeatsRegreso: Array.isArray(compra.selectedSeatsRegreso) ? [...compra.selectedSeatsRegreso] : [],
     };
+    const titularPago = {
+        numeroIdentificacion: "",
+        nombre: "",
+    };
     const tiposIdentificacionEndpoint = "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/getTiposIdentificacion?empresa=EC&pais=";
     // Metodo encargado para ejecutar una lappoz function
     let nameFunction = 'Paises';
@@ -731,11 +735,16 @@ console.log("Iniciar con la informacón de los pasajeros");
         let hasAdult = true;
         let letterAutorizationRequired = false;
         let i = 0;
-        for  (const input of birthDates) {
+        for (const input of birthDates) {
             const kendoDatePicker = kendo.jQuery(input).data("kendoDatePicker");
             const birthDate = kendoDatePicker.value();
             const responseTaxAge = await getTaxByAge(birthDate, i);
-            if(responseTaxAge.presentarDocumentoTaquilla == true){
+            const age = getAge(birthDate);
+            if (age >= 18 && titularPago.nombre == "") {
+                titularPago.numeroIdentificacion = document.getElementById(`idNumber-${i + 1}`).value;
+                titularPago.nombre = `${document.getElementById(`first-name-${i + 1}`).value} ${document.getElementById(`first-last-name-${i + 1}`).value}`;
+            }
+            if (responseTaxAge.presentarDocumentoTaquilla == true) {
                 letterAutorizationRequired = true;
             }
 
@@ -756,7 +765,7 @@ console.log("Iniciar con la informacón de los pasajeros");
             });
             return;
         }
-        if (!letterAutorizationRequired) {
+        if (letterAutorizationRequired) {
             Swal.fire({
                 title: "Atención",
                 text: "El menor debe presentar formato de permiso de padres en taquilla, antes del abordaje",
@@ -765,19 +774,14 @@ console.log("Iniciar con la informacón de los pasajeros");
             });
         }
         addPassagerPayload();
-        goLocation("#/page/estitular/ExpresoBrasilia_Lappiz");
+        if (titularPago.nombre == "")
+            goLocation('#/page/titular/ExpresoBrasilia_Lappiz');
+        else
+            goLocation("#/page/textoLegal/ExpresoBrasilia_Lappiz");
     }
     function addPassagerPayload() {
         const tiquetes = [];
         let numPassengers = state.cantidadPasajeros;
-        const titularPago = {
-            numeroIdentificacion: state.titularPago?.numeroIdentificacion || "",
-            nombre: state.titularPago
-                ? state.titularPago.primerNombre
-                    ? `${state.titularPago?.primerNombre} ${state.titularPago.primerApellido}`
-                    : state.titularPago.razonSocial
-                : "",
-        };
         while (numPassengers > 0) {
             const pasajero = {
                 numeroIdentificacion: document.getElementById(`idNumber-${numPassengers}`)
@@ -854,7 +858,8 @@ console.log("Iniciar con la informacón de los pasajeros");
             numPassengers--;
         }
         state.data = { tiquetes, tipoFacturacion: "PS", viajeroGaviota: "S" };
-        pouch.guardarCompra({ ...state });
+        
+        pouch.guardarCompra({ ...state, titularEsPasajero: !!titularPago.nombre });
     }
 
     function getTiqueteTrayecto(index, propositoViaje) {
