@@ -1,3 +1,7 @@
+<div id="timer" class="d-none"
+    style="font-size:10px;font-weight:bold;top: 50px;right: 25px;position: fixed;color: black;z-index: 1;">Tiempo:
+    <span id="timerValue">10:00</span>
+</div>
 <div>
     <div class="header-basic-expreso-brasilia d-flex justify-content-between align-items-center"
         style="position: relative; background: #123d67;height: 80px;">
@@ -17,10 +21,13 @@
     min-height: calc(100vh - 260px);">
         <div class="step flex-column active" id="step3">
             <div class="step-content flex-grow-1">
-                <h2 id="title-step3" style="font-size: 1.5rem;">Selecciona tus asientos de ida</h2>
+                <h2 id="title-step3" style="font-size: 1.5rem; color: #123d67;">Selecciona tus asientos de ida</h2>
                 <p>debes elegir al menos 1 silla</p>
-                <div class="d-flex justify-content-between p-3">
-                    <p><i class="fa fa-user"></i> Pasajeros <span id="count-passengers">0</span></p>
+                <div class="d-flex justify-content-between p-3" style="
+    background: #eaeded;
+    border-radius: 16px;
+">
+                    <p><img style="height: 20px;" src="https://runtimetest.lappiz.io/assets/images/Expreso/pasajero.svg" alt="Pasajeros"> Pasajeros <span id="count-passengers">0</span></p>
                     <p><strong id="total-costo">$ 0</strong></p>
                 </div>
                 <p class="text-center m-3" id="origen-destino">Origen | Destino</p>
@@ -31,7 +38,7 @@
                         <div id="seatSummaryBar" class="seat-summary-bar m-2">
                             <div class="d-flex justify-content-between align-items-center">
                                 <p><span class="btn-seat"></span>Libres</p>
-                                <p><span class="btn-seat selected"></span>Elegidos</p>
+                                <p><span class="btn-seat selected"></span>Seleccionados</p>
                                 <p><span class="btn-seat taken"></span>Ocupados</p>
                             </div>
                         </div>

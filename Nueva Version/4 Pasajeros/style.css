@@ -90,3 +90,481 @@ div.passenger-form>h6 {
     margin-bottom: 0.8rem;
     text-align: left;
 }
+/* ==== ESTRUCTURA GENERAL Y CONTENEDOR ==== */
+.checkout-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 1.25rem;
+    background-color: #ffffff;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* Header */
+.checkout-title {
+    color: #0b3c5d;
+    font-weight: 700;
+    font-size: 1.4rem;
+}
+
+.step-indicator {
+    color: #8a9ba8;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.btn-close-custom {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #0b3c5d;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+/* ==== BANNER DE ALERTA ==== */
+.info-alert-banner {
+    background-color: #ffffff;
+    border: 1.5px solid #ffd600;
+    border-radius: 12px;
+    padding: 6px 12px;
+    gap: 10px;
+}
+
+.info-icon-wrapper {
+    background-color: #ffd600;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.info-alert-text {
+    font-size: 0.78rem;
+    color: #4a5568;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+/* ==== MARCO ENVOLVENTE PRINCIPAL ==== */
+.main-form-wrapper {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 12px;
+    background-color: #ffffff;
+}
+
+/* ==== BOTÓN CONFIRMAR PASAJERO ==== */
+.btn-confirm-passenger {
+    background-color: #0d3b66;
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-confirm-passenger:hover:not(:disabled) {
+    background-color: #092a4a;
+    color: #ffffff;
+}
+
+.btn-confirm-passenger:disabled {
+    background-color: #a0aec0;
+    color: #ffffff;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* ==== ESTILOS EXACTOS DEL MOCKUP ==== */
+
+/* Tarjeta del Titular / Resumen */
+.passenger-card-summary {
+    background-color: #f7f9fa !important;
+    border-radius: 16px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    box-shadow: none !important;
+}
+
+.passenger-card-summary.is-titular-card {
+    border: 1.5px solid #ffd600 !important;
+    border-left: 10px solid #ffd600 !important; /* Banda lateral amarilla */
+}
+
+.titular-badge {
+    background-color: #123d67;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+}
+
+.passenger-name-title {
+    color: #1a2b49;
+    font-size: 0.95rem;
+}
+
+.summary-info-row {
+    font-size: 0.82rem;
+    color: #5a6a85;
+}
+
+.seat-badge {
+    border: 1px solid #7c9cb6;
+    color: #123d67;
+    background-color: #edf4fa;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+/* Campos Pll Shape (Totalmente Redondeados e Grises) */
+.form-field-pill {
+    position: relative;
+    width: 100%;
+}
+
+.custom-pill-input {
+    width: 100%;
+    background-color: #f2f4f7 !important;
+    border: 1px solid transparent !important;
+    border-radius: 25px !important;
+    padding: 0.75rem 2.5rem 0.75rem 1.2rem !important;
+    font-size: 0.9rem !important;
+    color: #334155 !important;
+    outline: none !important;
+}
+
+.custom-pill-input::placeholder {
+    color: #a0aec0 !important;
+    font-weight: 400;
+}
+
+.custom-pill-input:focus {
+    background-color: #ffffff !important;
+    border-color: #123d67 !important;
+    box-shadow: 0 0 0 3px rgba(18, 61, 103, 0.1) !important;
+}
+
+.readonly-input {
+    background-color: #f2f4f7 !important;
+    cursor: not-allowed;
+}
+
+/* Ícono de X estético dentro de las píldoras */
+.clear-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #cbd5e0;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+/* Adaptación de Kendo UI al estilo Pill Shape */
+.custom-pill-kendo.k-picker, 
+.custom-pill-kendo.k-dropdownlist, 
+.custom-pill-kendo.k-combobox {
+    width: 100% !important;
+    background-color: #f2f4f7 !important;
+    border: 1px solid transparent !important;
+    border-radius: 25px !important;
+    padding: 0.25rem 0.6rem !important;
+}
+
+.custom-pill-kendo .k-input-inner {
+    font-size: 0.9rem !important;
+    color: #334155 !important;
+}
+
+.custom-pill-kendo .k-button {
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Botón inferior gigante (Confirmar Pasajero) */
+.btn-confirm-passenger {
+    background-color: #123d67 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 0.85rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(18, 61, 103, 0.2) !important;
+}
+
+.btn-confirm-passenger:disabled {
+    background-color: #a0aec0 !important;
+    box-shadow: none !important;
+    opacity: 0.7;
+}
+
+/* =========================================================
+   ESTILOS GENERALES PILL-SHAPE (MOCKUP)
+   ========================================================= */
+
+/* Inputs nativos y contenedores */
+.custom-pill-input {
+    width: 100% !important;
+    height: 48px !important;
+    background-color: #f1f3f6 !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 0 1.2rem !important;
+    font-size: 0.9rem !important;
+    color: #2d3748 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.custom-pill-input::placeholder {
+    color: #a0aec0 !important;
+}
+
+.custom-pill-input:focus {
+    background-color: #ffffff !important;
+    border: 1px solid #1f4368 !important;
+    box-shadow: 0 0 0 2px rgba(31, 67, 104, 0.1) !important;
+}
+
+/* =========================================================
+   OVERAL DE KENDO UI (Dropdowns, Combos y DatePickers)
+   ========================================================= */
+
+/* Estructura externa del widget de Kendo */
+.k-widget.k-dropdown, 
+.k-widget.k-combobox, 
+.k-widget.k-datepicker {
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Envolvente interna de Kendo (Aplica la forma de píldora) */
+.k-dropdown-wrap, 
+.k-picker-wrap, 
+.k-state-default {
+    background-color: #f1f3f6 !important;
+    border: none !important;
+    border-radius: 25px !important;
+    height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 0.8rem 0 1.2rem !important;
+    box-shadow: none !important;
+}
+
+/* Reset al pasar el cursor o enfocar en Kendo */
+.k-dropdown-wrap.k-state-hover,
+.k-dropdown-wrap.k-state-focused,
+.k-picker-wrap.k-state-hover,
+.k-picker-wrap.k-state-focused {
+    background-color: #e8ecf1 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Texto interno seleccionado / Placeholder en Kendo */
+.k-dropdown-wrap .k-input, 
+.k-combobox .k-input, 
+.k-picker-wrap .k-input {
+    height: 100% !important;
+    line-height: 48px !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    font-size: 0.9rem !important;
+    color: #2d3748 !important;
+    box-shadow: none !important;
+}
+
+/* Botón flecha / ícono lateral dentro de Kendo */
+.k-select,
+.k-combobox .k-state-hover .k-select {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 30px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.k-icon {
+    color: #718096 !important;
+}
+
+/* =========================================================
+   LISTA DESPLEGABLE / POPUP DE KENDO
+   ========================================================= */
+
+.k-animation-container {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+}
+
+.k-list-container.k-popup.k-group.k-reset {
+    border: 1px solid #e2e8f0 !important;
+    background-color: #f1f3f6 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.k-list-scroller {
+    background: #f1f3f6 !important;
+}
+
+.k-list .k-item {
+    padding: 10px 16px !important;
+    font-size: 0.88rem !important;
+    border-radius: 6px !important;
+}
+
+.k-list .k-item.k-state-hover, 
+.k-list .k-item.k-state-selected {
+    background-color: #1f4368 !important;
+    color: #ffffff !important;
+}
+
+/* =========================================================
+   MOCKUP TARJETA RESUMEN Y BOTÓN INFERIOR
+   ========================================================= */
+
+.passenger-card-summary.is-titular-card {
+    background-color: #ffffff !important;
+    border: 1.5px solid #ffd600 !important;
+    border-radius: 16px !important;
+    border-left: 10px solid #ffd600 !important;
+}
+
+.titular-badge {
+    background-color: #1f4368;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.btn-confirm-passenger {
+    background-color: #1f4368 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 25px !important;
+    height: 50px !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    width: 100% !important;
+}
+/* Estilos específicos para el selector de Código de País */
+#passengerForms .col-5 .k-dropdown-wrap,
+#passengerForms .col-5 .k-picker-wrap {
+    background-color: #f1f3f6 !important;
+    border-radius: 25px !important;
+    height: 48px !important;
+    padding: 0 0.5rem 0 0.9rem !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Ajuste del contenido interno (Texto / Bandera del Indicativo) */
+#passengerForms .col-5 .k-input-inner,
+#passengerForms .col-5 .k-input-value-text {
+    font-size: 0.85rem !important;
+    color: #2d3748 !important;
+    display: flex !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Reducción de la flecha selectora en el campo de indicativo para ahorrar espacio */
+#passengerForms .col-5 .k-select {
+    width: 20px !important;
+    padding: 0 !important;
+}
+
+/* Evitar que el label por defecto (Código de país) rompa el layout */
+#passengerForms .col-5 .k-dropdown .k-input-option {
+    font-size: 0.82rem !important;
+    color: #a0aec0 !important;
+}
+/* Botón secundario (Volver) */
+.btn-back-passenger {
+    background-color: #ffffff;
+    color: #123d67;
+    border: 1.5px solid #d3dce8;
+    border-radius: 25px;
+    padding: 0.7rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.btn-back-passenger:hover {
+    background-color: #f1f5fb;
+}
+
+/* Botón Limpiar formulario (outline azul) */
+.btn-clear-passenger {
+    background-color: #7c9cb6;
+    color: #123d67;
+    border: 1.5px solid #123d67;
+    border-radius: 25px;
+    height: 50px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-clear-passenger:hover:not(:disabled) {
+    background-color: #edf4fa;
+}
+
+.btn-clear-passenger:disabled {
+    background-color: #a0aec0;
+    color: #ffffff;
+    border-color: #a0aec0;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Botones Limpiar y Guardar lado a lado */
+#clearPassengersBtn,
+#addPassangers {
+    flex: 1 1 0;
+    width: auto !important;
+}
+
+/* Sección de seguros del viaje */
+.insurance-card,
+.legal-card {
+    background-color: #f7f9fa;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 14px;
+}
+
+.insurance-title,
+.legal-title {
+    color: #123d67;
+    font-weight: 700;
+}
+
+.legal-card {
+    max-height: 220px;
+    overflow-y: auto;
+}

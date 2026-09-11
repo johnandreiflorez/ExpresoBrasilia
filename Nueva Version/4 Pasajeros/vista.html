@@ -1,3 +1,7 @@
+<div id="timer" class="d-none"
+    style="font-size:10px;font-weight:bold;top: 50px;right: 25px;position: fixed;color: black;z-index: 1;">Tiempo:
+    <span id="timerValue">10:00</span>
+</div>
 <div>
     <div class="header-basic-expreso-brasilia d-flex justify-content-between align-items-center"
         style="position: relative; background: #123d67;height: 80px;">
@@ -10,31 +14,73 @@
             style="background-color: #ffffff00 !important; border: none !important;"><span
                 style="margin-right: 3px;">Modificar Búsqueda </span><i class="fa fa-search"></i></button>
     </div>
-    <div id="main-card" style="position: relative;
-    background: #fcfcfc;
-    padding: 2rem 1.5rem 6rem 1.5rem;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-    min-height: calc(100vh - 260px);">
-        <div class="step flex-column active" id="step4">
-            <div class="step-content flex-grow-1">
-                <h5 style="font-size: 1.5rem;">Datos de pasajeros</h5>
-                <p class="text-muted">Complete la información de cada pasajero.</p>
-                <!-- <button  class="btn btn-outline-primary btn-sm mb-3">
-                Copiar correo y celular del primer pasajero
-            </button> -->
-
-                <div class="form-check my-2" id="copyContactContainer">
-                    <input type="checkbox" id="copyContact" class="form-check-input copy-first-passenger-data"
-                        style="margin: 0;">
-                    <label class="form-check-label" for="copyContact">
-                        Copiar correo y celular del primer pasajero
-                    </label>
-                </div>
-                <div id="passengerForms"></div> <!-- Aquí se generan los formularios dinámicos -->
+    <div class="checkout-container">
+        <!-- Header del flujo -->
+        <div class="checkout-header d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="checkout-title mb-0">¿Quiénes viajan?</h4>
             </div>
-            <div class="step-footer py-2 text-right">
-                <button type="button" class="btn btn-secondary" id="lastStep4">Atrás</button>
-                <button class="btn btn-primary next" id="addPassangers" disabled>Continuar</button>
+            <div class="d-flex align-items-center gap-2">
+                <span class="step-indicator">Paso 1 de 3</span>
+                <button id="closeModalBtn" class="btn-close-custom" aria-label="Cerrar">&times;</button>
+            </div>
+        </div>
+
+        <!-- Alert informativo sobre factura electrónica -->
+        <div class="info-alert-banner d-flex align-items-center mb-3">
+            <div class="info-icon-wrapper">
+                <i class="fa fa-info-circle"></i>
+            </div>
+            <div class="info-alert-text">
+                Los datos del titular de la compra se usarán para emitir la factura electrónica.
+            </div>
+        </div>
+
+        <!-- Contenedor con borde envolvente como en el mockup -->
+        <div class="main-form-wrapper">
+            <!-- Opciones adicionales (Copiar datos) -->
+            <div class="form-check mb-3 px-2" id="copyContactContainer">
+                <input type="checkbox" id="copyContact" class="form-check-input copy-first-passenger-data">
+                <label class="form-check-label ms-1" for="copyContact">
+                    Copiar correo y celular del primer pasajero
+                </label>
+            </div>
+
+            <!-- Aquí se renderizan las tarjetas y formularios dinámicos -->
+            <div id="passengerForms"></div>
+
+            <!-- Botones de acción: Limpiar formulario y Guardar cambios -->
+            <div class="d-flex gap-2 mt-3">
+                <button type="button" id="clearPassengersBtn" class="btn btn-clear-passenger">Limpiar formulario</button>
+                <button id="addPassangers" class="btn btn-confirm-passenger" disabled>
+                    Guardar cambios
+                </button>
+            </div>
+
+            <!-- Seguros del viaje (visible al completar todos los pasajeros) -->
+            <div id="insuranceSection" class="d-none mt-3">
+                <div class="insurance-card">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <div>
+                            <h5 class="insurance-title mb-0">Los seguros del viaje</h5>
+                            <small class="text-muted">Se agregarán <span id="insurancePerPassenger">$0</span> al precio del viaje por pasajero</small>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="travelInsuranceSwitch" role="switch">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Texto legal para tratamiento de datos -->
+            <div id="legalSection" class="d-none mt-3">
+                <div class="legal-card">
+                    <h6 class="legal-title mb-2">Tratamiento de datos</h6>
+                    <div id="legalTexts" class="small text-muted"></div>
+                </div>
+                <button type="button" id="continueToPaymentBtn" class="btn btn-confirm-passenger w-100 mt-3" disabled>
+                    Continuar a pago
+                </button>
             </div>
         </div>
     </div>

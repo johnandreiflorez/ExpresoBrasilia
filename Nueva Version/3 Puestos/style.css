@@ -9,6 +9,8 @@
 .btn-seat {
     border: 2px solid #cfd8e3;
     padding: 1px 10px;
+    border-radius: 6px;
+    margin-right: 6px;
 }
 
 /* ==== SILLAS ==== */
@@ -161,7 +163,8 @@
     position: sticky;
     bottom: 0;
     z-index: 1050;
-    background: #f8f9fa;
+    background: #fff;
+    padding-top: 6px;
 }
 
 .seat-summary-bar .card {
@@ -172,4 +175,149 @@
 .seat-summary-bar .badge {
     font-size: 0.75rem;
     margin-right: 0.25rem;
+}
+/* ==== CONTENEDOR CONTENEDOR DE BUS Y LLANTAS ==== */
+#seatLayout {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.bus-layout {
+    background: #ffffff;
+    border-radius: 40px 40px 20px 20px;
+    border: 2px solid #b0bec5;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    max-width: 220px;
+    position: relative; /* Necesario para ubicar las llantas */
+    padding: 15px 10px 20px 10px;
+}
+
+/* Pseudo-elementos para las 4 llantas */
+.bus-layout::before,
+.bus-layout::after {
+   content: "";
+    position: absolute;
+    width: 6px;
+    height: 69px;
+    background-color: #a2b2ba;
+    border-radius: 4px;
+}
+
+/* Llantas Izquierdas (Delantera y Trasera) */
+.bus-layout::before {
+    left: -7px;
+    top: 72px;
+    box-shadow: 0 260px 0 #a2b2ba;
+}
+
+/* Llantas Derechas (Delantera y Trasera) */
+.bus-layout::after {
+    right: -7px;
+    top: 72px;
+    box-shadow: 0 260px 0 #a2b2ba;
+}
+
+.img-driver {
+    padding-top: 5px;
+    height: 28px;
+    width: 100%;
+    max-width: 110px;
+    padding-bottom: 12px;
+}
+
+.row-seat {
+    padding: 0 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 4px 0;
+    gap: 6px;
+}
+
+/* ==== DISEÑO REALISTA DE ASIENTOS (ESPALDAR Y BRAZOS) ==== */
+.seat {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px 8px 6px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1a365d;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    border: 1.5px solid #b0bec5;
+    background: #ffffff;
+    position: relative;
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.1); /* Efecto de profundidad en la cojinería */
+}
+
+/* Espaldar / Cojín superior del asiento */
+.seat::before {
+    content: "";
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    height: 5px;
+    background: inherit;
+    border: 1.5px solid #b0bec5;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+}
+
+/* Reposabrazos Laterales */
+.seat::after {
+    content: "";
+    position: absolute;
+    bottom: 2px;
+    width: 120%;
+    height: 28px;
+    border-left: 4px solid #b0bec5;
+    border-right: 4px solid #b0bec5;
+    background: transparent;
+    pointer-events: none;
+}
+
+/* ESTADOS DE ASIENTOS Y ESTILOS DE PASILLO */
+.seat.free {
+    background-color: #ffffff;
+    border-color: #b0bec5;
+    color: #1a365d;
+}
+
+.seat.free:hover {
+    border-color: #1565c0;
+    transform: scale(1.05);
+}
+
+.seat.selected {
+    background-color: #bbdefb !important;
+    border-color: #1e88e5 !important;
+    color: #0d47a1;
+}
+
+.seat.taken {
+    background-color: #cfd8dc !important;
+    border-color: #b0bec5 !important;
+    color: #78909c;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Ocultar elementos decorativos en pasillos o casillas vacías */
+.seat.pasillo,
+.seat.empty {
+    background: transparent !important;
+    border: none !important;
+    pointer-events: none;
+    box-shadow: none !important;
+}
+
+.seat.pasillo::before,
+.seat.pasillo::after,
+.seat.empty::before,
+.seat.empty::after {
+    display: none;
 }

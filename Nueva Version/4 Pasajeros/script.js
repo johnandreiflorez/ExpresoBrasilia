@@ -27,6 +27,10 @@ console.log("Iniciar con la informacón de los pasajeros");
         totalSegments: Number(compra.totalSegments || (compra.viajeIda?.lineas?.length || 1)),
         selectedSeatsIda: Array.isArray(compra.selectedSeatsIda) ? [...compra.selectedSeatsIda] : [],
         selectedSeatsRegreso: Array.isArray(compra.selectedSeatsRegreso) ? [...compra.selectedSeatsRegreso] : [],
+        conSeguro: !!compra.conSeguro,
+        valorSeguroPerPassenger: Number(compra.valorSeguroPerPassenger) || 0,
+        valorSeguroTotal: Number(compra.valorSeguroTotal) || 0,
+        data: compra.data || null,
     };
     const titularPago = {
         numeroIdentificacion: "",
@@ -47,17 +51,18 @@ console.log("Iniciar con la informacón de los pasajeros");
         const container = $("#passengerForms");
         container.empty();
         let numPassengers = state.cantidadPasajeros;
+
         if (numPassengers === 0) {
-            container.append(
-                "<p class='text-danger'>Debe seleccionar al menos un asiento.</p>"
-            );
+            container.append("<p class='text-danger'>Debe seleccionar al menos un asiento.</p>");
             return;
         }
+
+        // Regla de negocio: en ida y vuelta deben estar seleccionados los asientos de regreso
         const isRoundTrip = !!state.fechaRegreso;
         if (
             isRoundTrip &&
-            (state.selectedSeatsRegreso[0].length === 0 ||
-                state.selectedSeatsRegreso[0].length != numPassengers)
+            (state.selectedSeatsRegreso?.[0]?.length === 0 ||
+                state.selectedSeatsRegreso?.[0]?.length !== numPassengers)
         ) {
             container.append(
                 `<p class='text-danger'>Debe seleccionar ${numPassengers} ${numPassengers == 1 ? "asiento" : "asientos"
@@ -65,88 +70,126 @@ console.log("Iniciar con la informacón de los pasajeros");
             );
             return;
         }
+
         if (numPassengers == 1) {
             document.getElementById("copyContactContainer").style.display = "none";
         } else {
             document.getElementById("copyContactContainer").style.display = "block";
         }
 
+        // Extraer asientos seleccionados para mostrarlos en la tarjeta resumen
+        const getSeatsText = (idx) => {
+            if (state.selectedSeatsIda && state.selectedSeatsIda.length > 0) {
+                const seats = state.selectedSeatsIda.map(s => s[idx - 1]?.numero).filter(Boolean);
+                return seats.map(s => `<span class="seat-badge">${s}</span>`).join(' ');
+            }
+            return `<span class="seat-badge">--</span>`;
+        };
+
         for (let i = 1; i <= numPassengers; i++) {
             const formId = `passenger-${i}`;
+            const isFirst = (i === 1);
+
             const form = `
-
-        <div class="passenger-card card shadow-sm p-2 mb-2 selectable-passenger d-none" style="cursor: pointer"  id="card-${formId}">
-            <h6 class="mb-0">Pasajero ${i}</h6>
-            <div class="summary-view"></div>
-        </div>
-      <div class="mb-3 p-3 passenger-form" id="${formId}">
-        <h6>Pasajero ${i}<span id="close-${formId}" class="close-passenger d-none" role="button">Ocultar <i class="fa fa-close"></i></span></h6>
-
-        <div class="form-group">
-          <label>Nacionalidad<span style="color: red">*</span></label>
-          <input required class="form-control form-control-sm" id="nationality-${i}" style="width:100%"  />
-        </div>
-
-        <div class="form-group">
-          <label>Tipo de identificación<span style="color: red">*</span></label>
-          <input required class="form-control form-control-sm" id="idType-${i}" style="width:100%" />
-        </div>
-
-        <div class="form-group">
-          <label>Número de identificación<span style="color: red">*</span></label>
-          <input name="usr-doc-${i}" type="number" autocomplete="new-user-document" class="form-control form-control-sm" pattern="^[0-9]+$" id="idNumber-${i}" required />
-        </div>
-
-        <div class="form-group">
-          <label>Primer nombre<span style="color: red">*</span></label>
-          <input type="text" autocomplete="new-user-document" class="form-control form-control-sm" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,20}$" id="first-name-${i}" required />
-        </div>
-
-        <div class="form-group">
-          <label>Segundo nombre</label>
-          <input type="text" autocomplete="new-user-document" class="form-control form-control-sm" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,20}$" id="second-name-${i}"/>
-        </div>
-
-        <div class="form-group">
-          <label>Primer apellido<span style="color: red">*</span></label>
-          <input type="text" autocomplete="new-user-document" class="form-control form-control-sm" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,20}$" id="first-last-name-${i}" required />
-        </div>
-
-        <div class="form-group">
-          <label>Segundo apellido</label>
-          <input type="text" autocomplete="new-user-document"  class="form-control form-control-sm" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,20}$" id="second-last-name-${i}"/>
-        </div>
-
-        <div class="form-group">
-          <label>Fecha de nacimiento<span style="color: red">*</span></label>
-          <input required id="birthdate-${i}" style="width:100%" />
-        </div>
-
-        <div class="form-group">
-          <label>Genero<span style="color: red">*</span></label>
-          <input required class="form-control form-control-sm" id="gender-${i}" style="width:100%" />
-        </div>
-
-        <div class="form-group">
-            <label>Correo electrónico<span style="color: red">*</span></label>
-            <input type="email" class="form-control form-control-sm passenger-email" id="email-${i}" required pattern="^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$">
-            <div class="invalid-feedback">Ingrese un correo válido</div>
-        </div>
-        <div class="form-group">
-            <label>Celular<span style="color: red">*</span></label>
-            <div class="d-flex">
-            <input required id="indicador-phone-${i}" style="width:30%" />
-            <input type="tel" class="form-control passenger-phone" id="phone-${i}" required pattern="^[0-9]{10}$" placeholder="10 dígitos">
+    <!-- TARJETA COLAPSADA (ESTILO EXACTO MOCKUP) -->
+    <div class="passenger-card-summary card p-3 mb-3 d-none ${isFirst ? 'is-titular-card' : ''}" id="card-${formId}" style="cursor: pointer;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex align-items-center gap-2">
+                ${isFirst ? '<span class="titular-badge">Titular</span>' : '<span class="titular-badge d-none">Titular</span>'}
+                <strong class="passenger-name-title" id="summary-name-${i}">Pasajero ${i}</strong>
             </div>
-            <div class="invalid-feedback">Ingrese un número de 10 dígitos</div>
+            <div class="d-flex align-items-center gap-1 text-muted font-weight-bold">
+                <small>P${i}</small>
+                <i class="fa fa-chevron-down ms-1" style="font-size: 0.8rem;"></i>
+            </div>
         </div>
-      </div>
+        <div class="d-flex align-items-center gap-3 text-muted summary-info-row" style="gap: 0.75rem;">
+            <div class="d-flex align-items-center gap-1" style="gap: 0.25rem;">
+                <img style="height: 20px;" src="https://runtimetest.lappiz.io/assets/images/Expreso/pasajero.svg" alt="Pasajeros">
+                <span id="summary-type-${i}">Adulto: 1</span>
+            </div>
+            <div class="d-flex align-items-center gap-1" style="gap: 0.25rem;">
+                <img style="height: 20px;" src="https://runtimetest.lappiz.io/assets/images/Expreso/asiento.svg" alt="Asiento">
+                <span>Asiento:</span>
+                <div class="d-inline-flex gap-1" id="summary-seats-${i}">
+                    ${getSeatsText(i)}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO VERTICAL (ESTILO EXACTO MOCKUP) -->
+    <div class="passenger-form-card mb-3" id="${formId}">
+        <div class="form-field-pill mb-2">
+            <input name="usr-doc-${i}" type="number" autocomplete="new-user-document" class="custom-pill-input" id="idNumber-${i}" placeholder="No. de identificación" required />
+            <i class="fa fa-times-circle clear-icon"></i>
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input required id="nationality-${i}" class="custom-pill-kendo" placeholder="País del documento" />
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input required id="idType-${i}" class="custom-pill-kendo" placeholder="Tipo de documento" />
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input type="text" autocomplete="new-user-document" class="custom-pill-input" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,20}$" id="first-name-${i}" placeholder="Primer nombre" required />
+            <i class="fa fa-times-circle clear-icon"></i>
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input type="text" autocomplete="new-user-document" class="custom-pill-input" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,20}$" id="second-name-${i}" placeholder="Segundo nombre" />
+            <i class="fa fa-times-circle clear-icon"></i>
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input type="text" autocomplete="new-user-document" class="custom-pill-input" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,20}$" id="first-last-name-${i}" placeholder="Primer apellido" required />
+            <i class="fa fa-times-circle clear-icon"></i>
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input type="text" autocomplete="new-user-document" class="custom-pill-input" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,20}$" id="second-last-name-${i}" placeholder="Segundo apellido" />
+            <i class="fa fa-times-circle clear-icon"></i>
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input required id="birthdate-${i}" class="custom-pill-kendo" placeholder="Fecha de nacimiento" />
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input type="text" readonly class="custom-pill-input readonly-input" id="age-${i}" placeholder="Edad" />
+            <i class="fa fa-times-circle clear-icon"></i>
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input required id="gender-${i}" class="custom-pill-kendo" placeholder="Sexo" />
+        </div>
+
+        <div class="form-field-pill mb-2">
+            <input type="email" class="custom-pill-input passenger-email" id="email-${i}" placeholder="Email" required pattern="^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$">
+            <i class="fa fa-times-circle clear-icon"></i>
+        </div>
+
+        <div class="row g-2 mb-2">
+           <div class="col-5">
+        <div class="form-field-pill">
+            <input required id="indicador-phone-${i}" class="custom-pill-kendo" />
+        </div>
+    </div>
+            <div class="col-7">
+                <div class="form-field-pill">
+                    <input type="tel" class="custom-pill-input passenger-phone" id="phone-${i}" placeholder="Celular" required pattern="^[0-9]{10}$">
+                </div>
+            </div>
+        </div>
+    </div>
     `;
             container.append(form);
 
-            // Inicializar Kendo Widgets
+            // Inicializadores Kendo Widgets con placeholders integrados
             kendo.jQuery(`#gender-${i}`).kendoComboBox({
-                optionLabel: "Seleccione...",
+                placeholder: "Sexo",
                 dataTextField: "descripcion",
                 dataValueField: "codigo",
                 dataSource: [
@@ -159,12 +202,13 @@ console.log("Iniciar con la informacón de los pasajeros");
                     toggleViewCardPassager(field);
                 },
             });
+
             kendo.jQuery(`#idType-${i}`).kendoDropDownList({
-                optionLabel: "Seleccione...",
+                optionLabel: "Tipo de documento",
                 dataTextField: "descripcion",
                 dataValueField: "codigo",
-                dataSource: [], // Comienza con un array vacío
-                enable: false, // Deshabilitado por defecto
+                dataSource: [],
+                enable: false,
                 change: () => {
                     const field = document.getElementById(`idType-${i}`);
                     validateField(field);
@@ -173,7 +217,7 @@ console.log("Iniciar con la informacón de los pasajeros");
             });
 
             kendo.jQuery(`#nationality-${i}`).kendoComboBox({
-                placeholder: "Seleccione país...",
+                placeholder: "Pais del documento",
                 filter: "contains",
                 dataTextField: "descripcion",
                 dataValueField: "codigo",
@@ -184,52 +228,11 @@ console.log("Iniciar con la informacón de los pasajeros");
                             dataType: "json",
                         },
                     },
-                    schema: {
-                        data: "data",
-                    },
+                    schema: { data: "data" },
                 },
                 change: (e) => {
-                    // Obtiene la instancia del dropdown de tipos de identificación
-                    const tipoIdentificacionDDL = kendo
-                        .jQuery(`#idType-${i}`)
-                        .data("kendoDropDownList");
-
-                    // Obtiene el valor seleccionado del ComboBox de nacionalidad.
                     const selectedValue = e.sender.value();
-
-                    // Si se seleccionó un valor (no es nulo ni una cadena vacía)
-                    if (selectedValue) {
-                        // Habilita el dropdown de tipos de identificación
-                        tipoIdentificacionDDL.enable(true);
-
-                        // Establece el nuevo dataSource para el dropdown de tipos de identificación
-                        // Usando la URL del endpoint con el ID de país seleccionado.
-                        tipoIdentificacionDDL.setDataSource(
-                            new kendo.data.DataSource({
-                                transport: {
-                                    read: {
-                                        url: tiposIdentificacionEndpoint + selectedValue,
-                                        dataType: "json",
-                                    },
-                                },
-                                schema: {
-                                    data: "data",
-                                },
-                            })
-                        );
-
-                        // Obliga al dataSource a leer los nuevos datos.
-                        tipoIdentificacionDDL.dataSource.read();
-                    } else {
-                        // Si no se seleccionó nada, deshabilita el dropdown
-                        tipoIdentificacionDDL.enable(false);
-
-                        // Limpia los datos del dropdown
-                        tipoIdentificacionDDL.value(null);
-                        tipoIdentificacionDDL.setDataSource(
-                            new kendo.data.DataSource({ data: [] })
-                        );
-                    }
+                    updateIdTypeForNationality(i, selectedValue);
                     const field = document.getElementById(`nationality-${i}`);
                     validateField(field);
                     toggleViewCardPassager(field);
@@ -238,24 +241,28 @@ console.log("Iniciar con la informacón de los pasajeros");
 
             kendo.jQuery(`#birthdate-${i}`).kendoDatePicker({
                 format: "dd/MM/yyyy",
-                max: new Date(), // Bloquea fechas futuras
-                adaptiveMode: "auto",   // activa modo adaptativo/mobile
-                inputMode: "numeric",
+                max: new Date(),
+                adaptiveMode: "auto",
+                placeholder: "Fecha de nacimiento",
                 change: () => {
                     const field = document.getElementById(`birthdate-${i}`);
+                    const dateVal = kendo.jQuery(`#birthdate-${i}`).data("kendoDatePicker").value();
+                    if (dateVal) {
+                        const calculatedAge = getAge(dateVal);
+                        document.getElementById(`age-${i}`).value = calculatedAge >= 0 ? `${calculatedAge} años` : "";
+                    }
                     validateField(field);
                     toggleViewCardPassager(field);
                 }
-                //...cultureDatePicker
             });
 
             kendo.jQuery(`#indicador-phone-${i}`).kendoDropDownList({
                 dataSource: dataPaises,
                 dataTextField: "Indicativo",
                 dataValueField: "Indicativo",
-                placeholder: "Seleccione",
-                template: '<img src="#: LinkBandera?.split("|")[2] #" alt="Bandera" style="width: 20px; height: 15px; margin-right: 5px; vertical-align: middle;"><span>#: Indicativo #</span>',
-                valueTemplate: '<img src="#: LinkBandera?.split("|")[2] #" alt="Bandera" style="width: 20px; height: 15px; margin-right: 5px; vertical-align: middle;"><span>#: Indicativo #</span>',
+                placeholder: "Código de país",
+                template: '<div class="d-flex align-items-center gap-1"><img src="#: LinkBandera?.split("|")[2] #" alt="bandera" style="width:18px; height:12px; object-fit:cover;"> <span>#: Indicativo #</span></div>',
+                valueTemplate: '<div class="d-flex align-items-center gap-1"><img src="#: LinkBandera?.split("|")[2] #" alt="bandera" style="width:18px; height:12px; object-fit:cover;"> <span>#: Indicativo #</span></div>',
                 change: () => {
                     const field = document.getElementById(`indicador-phone-${i}`);
                     validateField(field);
@@ -263,34 +270,8 @@ console.log("Iniciar con la informacón de los pasajeros");
                 },
             });
 
-            document
-                .getElementById(`idNumber-${i}`)
-                .addEventListener("blur", (event) => {
-                    const identificacion = event.target.value;
-                    validarPasajero(identificacion, i);
-                    if (identificacion) {
-                        fetchAndFillPassenger(identificacion, i);
-                    }
-                });
-
-            document
-                .getElementById(`close-passenger-${i}`)
-                .addEventListener("click", (e) => {
-                    const clicked = e.currentTarget;
-                    e.stopPropagation();
-                    const index = clicked.id.split("-").pop();
-                    const elementeCard = document.getElementById(`card-passenger-${index}`);
-                    const elementeForm = document.getElementById(`passenger-${index}`);
-                    if (elementeCard) elementeCard.classList.remove("d-none");
-                    if (elementeForm) elementeForm.classList.add("d-none");
-                });
-
-            //Dar valores
-            if (
-                state.data &&
-                state.data.tiquetes &&
-                state.data.tiquetes.length > 0
-            ) {
+            // Restaurar datos del pasajero si ya fueron guardados en una sesión anterior
+            if (state.data && state.data.tiquetes && state.data.tiquetes.length > 0) {
                 const currenPassanger = state.data.tiquetes[i - 1];
                 if (currenPassanger) {
                     setTimeout(() => {
@@ -300,10 +281,8 @@ console.log("Iniciar con la informacón de los pasajeros");
                             .jQuery(`#nationality-${i}`)
                             .data("kendoComboBox")
                             .value(currenPassanger.pasajero.pais);
-                        kendo
-                            .jQuery(`#idType-${i}`)
-                            .data("kendoDropDownList")
-                            .value(currenPassanger.pasajero.tipoIdentificacion);
+                        updateIdTypeForNationality(i, currenPassanger.pasajero.pais);
+                        applyIdTypeValue(i, currenPassanger.pasajero.tipoIdentificacion);
                         document.getElementById(`first-name-${i}`).value =
                             currenPassanger.pasajero.primerNombre;
                         document.getElementById(`second-name-${i}`).value =
@@ -316,6 +295,11 @@ console.log("Iniciar con la informacón de los pasajeros");
                             .jQuery(`#birthdate-${i}`)
                             .data("kendoDatePicker")
                             .value(currenPassanger.pasajero.fechaNacimiento);
+                        const ageEl = document.getElementById(`age-${i}`);
+                        if (ageEl && currenPassanger.pasajero.fechaNacimiento) {
+                            const restoredAge = getAge(new Date(currenPassanger.pasajero.fechaNacimiento));
+                            ageEl.value = restoredAge >= 0 ? `${restoredAge} años` : "";
+                        }
                         kendo
                             .jQuery(`#gender-${i}`)
                             .data("kendoComboBox")
@@ -324,26 +308,136 @@ console.log("Iniciar con la informacón de los pasajeros");
                             currenPassanger.pasajero.celular;
                         document.getElementById(`email-${i}`).value =
                             currenPassanger.pasajero.email;
+                        togglePassengerViewIfComplete(i);
+                        validateAllField();
                     }, 200);
                 }
             }
+            document.getElementById(`idNumber-${i}`).addEventListener("blur", (event) => {
+                const identificacion = event.target.value;
+                validarPasajero(identificacion, i);
+                if (identificacion) {
+                    fetchAndFillPassenger(identificacion, i);
+                }
+            });
         }
+
         enableLiveValidation();
         validateAllField();
-        container.on("click", ".passenger-card", function () {
+
+        container.on("click", ".passenger-card-summary", function () {
             const elementeForm = this.nextElementSibling;
             this.classList.add("d-none");
             elementeForm.classList.remove("d-none");
         });
-        container.on("click", ".close-passenger", function (e) {
-            const clicked = e.currentTarget;
-            const index = clicked.id.split("-").pop();
-            const elementeCard = document.getElementById(`card-passenger-${index}`);
-            const elementeForm = document.getElementById(`passenger-${index}`);
-            if (elementeCard) elementeCard.classList.add("d-none");
-            if (elementeForm) elementeForm.classList.remove("d-none");
-            e.stopPropagation();
-        });
+    }
+
+    // Carga el DropDownList de tipos de documento según el país seleccionado
+    function updateIdTypeForNationality(i, codigoPais) {
+        const tipoIdentificacionDDL = kendo.jQuery(`#idType-${i}`).data("kendoDropDownList");
+        if (!tipoIdentificacionDDL) return;
+        if (codigoPais) {
+            tipoIdentificacionDDL.enable(true);
+            tipoIdentificacionDDL.setDataSource(
+                new kendo.data.DataSource({
+                    transport: {
+                        read: {
+                            url: tiposIdentificacionEndpoint + codigoPais,
+                            dataType: "json",
+                        },
+                    },
+                    schema: { data: "data" },
+                })
+            );
+            tipoIdentificacionDDL.dataSource.read();
+        } else {
+            tipoIdentificacionDDL.enable(false);
+            tipoIdentificacionDDL.value(null);
+            tipoIdentificacionDDL.setDataSource(new kendo.data.DataSource({ data: [] }));
+        }
+    }
+
+    // Asigna el tipo de documento cuando el dataSource ya está cargado (async/i18n)
+    function applyIdTypeValue(i, codigo) {
+        if (!codigo) return;
+        const widget = kendo.jQuery(`#idType-${i}`).data("kendoDropDownList");
+        if (!widget) return;
+        let intentos = 0;
+        const intentar = () => {
+            if (intentos > 30) return;
+            intentos++;
+            if (widget.dataSource.data().length > 0) {
+                widget.value(codigo);
+                const field = document.getElementById(`idType-${i}`);
+                if (field) {
+                    validateField(field);
+                    toggleViewCardPassager(field);
+                }
+                validateAllField();
+            } else {
+                setTimeout(intentar, 120);
+            }
+        };
+        intentar();
+    }
+
+    // Marca como titular al primer adulto (>=18) registrado; sin adultos, no hay titular
+    function updateTitular() {
+        let titularIndex = null;
+        for (let i = 1; i <= state.cantidadPasajeros; i++) {
+            const birthWidget = kendo.jQuery(`#birthdate-${i}`).data("kendoDatePicker");
+            const birthDate = birthWidget ? birthWidget.value() : null;
+            if (birthDate && getAge(birthDate) >= 18) {
+                titularIndex = i;
+                break;
+            }
+        }
+        for (let i = 1; i <= state.cantidadPasajeros; i++) {
+            const card = document.getElementById(`card-passenger-${i}`);
+            if (!card) continue;
+            card.classList.toggle("is-titular-card", i === titularIndex);
+            const badge = card.querySelector(".titular-badge");
+            if (badge) badge.classList.toggle("d-none", i !== titularIndex);
+        }
+        if (titularIndex) {
+            titularPago.numeroIdentificacion = document.getElementById(`idNumber-${titularIndex}`)?.value || "";
+            titularPago.nombre = `${document.getElementById(`first-name-${titularIndex}`)?.value || ""} ${document.getElementById(`first-last-name-${titularIndex}`)?.value || ""}`.trim();
+        } else {
+            titularPago.numeroIdentificacion = "";
+            titularPago.nombre = "";
+        }
+    }
+
+    function togglePassengerViewIfComplete(i) {
+        if (!i) return;
+        const elementeCard = document.getElementById(`card-passenger-${i}`);
+        const elementeForm = document.getElementById(`passenger-${i}`);
+        if (!elementeCard || !elementeForm) return;
+
+        const showCardPasseger = isPassengerFormComplete(i);
+        if (showCardPasseger) {
+            elementeCard.classList.remove("d-none");
+            elementeForm.classList.add("d-none");
+
+            // Actualizar datos del header colapsado tipo mockup
+            const fullName = `${$("#first-name-" + i).val()} ${$("#first-last-name-" + i).val()}`.trim();
+            if (fullName) {
+                $(`#summary-name-${i}`).text(fullName);
+            }
+
+            // Etiqueta Adulto/Menor según la fecha de nacimiento
+            const birthWidget = kendo.jQuery(`#birthdate-${i}`).data("kendoDatePicker");
+            const birthDate = birthWidget ? birthWidget.value() : null;
+            const computedAge = birthDate ? getAge(birthDate) : null;
+            const summaryType = document.getElementById(`summary-type-${i}`);
+            if (summaryType) {
+                summaryType.textContent = computedAge === null ? "Pasajero" : computedAge >= 18 ? "Adulto" : "Menor";
+            }
+            updateTitular();
+        } else {
+            elementeCard.classList.add("d-none");
+            elementeForm.classList.remove("d-none");
+        }
     }
 
     async function getTaxByAge(curretnDate, index) {
@@ -412,7 +506,7 @@ console.log("Iniciar con la informacón de los pasajeros");
     }
     //#endregion
     function enableLiveValidation() {
-        document.querySelectorAll("#step4 input, #step4 select").forEach((field) => {
+        document.querySelectorAll("#passengerForms input, #passengerForms select").forEach((field) => {
             const validateAndToggle = () => {
                 validateField(field);
                 toggleViewCardPassager(field);
@@ -454,43 +548,14 @@ console.log("Iniciar con la informacón de los pasajeros");
         const allValid = requiredFields.every((field) => field.checkValidity());
         return allValid;
     }
-    function getPassengerSummary(i) {
-        const nombre = `${$("#first-name-" + i).val()} ${$(
-            "#first-last-name-" + i
-        ).val()}`;
-        const id = $("#idNumber-" + i).val();
-        return `
-        <h6 class="mb-1">${nombre}</h6>
-        <p class="mb-0 text-muted">ID: ${id}</p>
-        <small class="text-primary">Toca para editar</small>
-    `;
-    }
+
     function toggleViewCardPassager(field) {
         const i = field?.id?.split("-")[field?.id?.split("-").length - 1];
         togglePassengerViewIfComplete(i);
     }
 
-    function togglePassengerViewIfComplete(i) {
-        if (!i) return;
-        const elementeCard = document.getElementById(`card-passenger-${i}`);
-        const elementeForm = document.getElementById(`passenger-${i}`);
-        if (!elementeCard || !elementeForm) return;
-
-        const showCardPasseger = isPassengerFormComplete(i);
-        if (showCardPasseger) {
-            elementeCard.classList.remove("d-none");
-            elementeForm.classList.add("d-none");
-            document.getElementById(`close-passenger-${i}`).classList.remove("d-none");
-            const resumen = getPassengerSummary(i);
-            elementeCard.getElementsByClassName("summary-view")[0].innerHTML = resumen;
-        } else {
-            elementeCard.classList.add("d-none");
-            elementeForm.classList.remove("d-none");
-            document.getElementById(`close-passenger-${i}`).classList.add("d-none");
-        }
-    }
-
     function validateAllField() {
+        updateTitular();
         let isValidForm = true;
         for (let i = 1; i <= state.cantidadPasajeros; i++) {
             if (!isPassengerFormComplete(i)) {
@@ -499,7 +564,17 @@ console.log("Iniciar con la informacón de los pasajeros");
             }
         }
         document.getElementById("addPassangers").disabled = !isValidForm;
+        toggleExtrasVisibility(isValidForm);
         return isValidForm;
+    }
+
+    function toggleExtrasVisibility(show) {
+        const insuranceSection = document.getElementById("insuranceSection");
+        const legalSection = document.getElementById("legalSection");
+        const continueBtn = document.getElementById("continueToPaymentBtn");
+        if (insuranceSection) insuranceSection.classList.toggle("d-none", !show);
+        if (legalSection) legalSection.classList.toggle("d-none", !show);
+        if (continueBtn) continueBtn.disabled = !show;
     }
 
     function validateField(field) {
@@ -536,7 +611,7 @@ console.log("Iniciar con la informacón de los pasajeros");
                 }
             }
 
-            document.querySelectorAll(".passenger-card").forEach((card) => {
+            document.querySelectorAll(".passenger-card-summary").forEach((card) => {
                 const index = card.id.split("-").pop();
                 togglePassengerViewIfComplete(index);
             });
@@ -692,15 +767,25 @@ console.log("Iniciar con la informacón de los pasajeros");
 
             // Widgets Kendo
             const nationalityWidget = kendo.jQuery(`#nationality-${index}`).data("kendoComboBox");
-            if (nationalityWidget && d.pais) nationalityWidget.value(d.pais);
+            if (nationalityWidget && d.pais) {
+                nationalityWidget.value(d.pais);
+                updateIdTypeForNationality(index, d.pais);
+            }
 
             const idTypeWidget = kendo.jQuery(`#idType-${index}`).data("kendoDropDownList");
-            if (idTypeWidget && d.tipoIdentificacion) idTypeWidget.value(d.tipoIdentificacion);
+            if (idTypeWidget && d.tipoIdentificacion) {
+                applyIdTypeValue(index, d.tipoIdentificacion);
+            }
 
             const birthWidget = kendo.jQuery(`#birthdate-${index}`).data("kendoDatePicker");
             if (birthWidget && d.fechaNacimiento) {
                 const fecha = new Date(d.fechaNacimiento);
                 birthWidget.value(fecha);
+                const ageEl = document.getElementById(`age-${index}`);
+                if (ageEl) {
+                    const calculatedAge = getAge(fecha);
+                    ageEl.value = calculatedAge >= 0 ? `${calculatedAge} años` : "";
+                }
             }
 
             const genderWidget = kendo.jQuery(`#gender-${index}`).data("kendoComboBox");
@@ -713,14 +798,29 @@ console.log("Iniciar con la informacón de los pasajeros");
                 if (!indicadorWidget.value()) indicadorWidget.value(d.prefijoTelefonico.replace('+', ''));
             }
 
-            // Validar campos para actualizar estados y colapsado
-            [idEl, firstNameEl, firstLastEl, emailEl, phoneEl, document.getElementById(`indicador-phone-${index}`)].forEach((f) => {
+            // Validar todos los campos para actualizar estados y colapsado
+            [
+                idEl,
+                firstNameEl,
+                secondNameEl,
+                firstLastEl,
+                secondLastEl,
+                emailEl,
+                phoneEl,
+                document.getElementById(`nationality-${index}`),
+                document.getElementById(`birthdate-${index}`),
+                document.getElementById(`gender-${index}`),
+                document.getElementById(`indicador-phone-${index}`),
+            ].forEach((f) => {
                 if (f) validateField(f);
             });
 
-            // Forzar reevaluación y posible colapso
-            togglePassengerViewIfComplete(index);
-            validateAllField();
+            // Esperar carga asíncrona del tipo de documento y disparar colapso
+            setTimeout(() => {
+                validateField(document.getElementById(`idType-${index}`));
+                togglePassengerViewIfComplete(index);
+                validateAllField();
+            }, 400);
         } catch (err) {
             console.error('Error fetching passenger data', err);
         }
@@ -744,13 +844,13 @@ console.log("Iniciar con la informacón de los pasajeros");
                 titularPago.numeroIdentificacion = document.getElementById(`idNumber-${i + 1}`).value;
                 titularPago.nombre = `${document.getElementById(`first-name-${i + 1}`).value} ${document.getElementById(`first-last-name-${i + 1}`).value}`;
             }
-            if (responseTaxAge.presentarDocumentoTaquilla == true) {
+            if (responseTaxAge?.presentarDocumentoTaquilla == true) {
                 letterAutorizationRequired = true;
             }
 
-            if (responseTaxAge.aplicaCustodio == 'S') {
+            if (responseTaxAge?.aplicaCustodio == 'S') {
                 hasAdult = false;
-                return;
+                continue;
             }
             hasAdult = true;
             i++;
@@ -774,10 +874,7 @@ console.log("Iniciar con la informacón de los pasajeros");
             });
         }
         addPassagerPayload();
-        if (titularPago.nombre == "")
-            goLocation('#/page/titular/ExpresoBrasilia_Lappiz');
-        else
-            goLocation("#/page/textoLegal/ExpresoBrasilia_Lappiz");
+        return true;
     }
     function addPassagerPayload() {
         const tiquetes = [];
@@ -858,7 +955,7 @@ console.log("Iniciar con la informacón de los pasajeros");
             numPassengers--;
         }
         state.data = { tiquetes, tipoFacturacion: "PS", viajeroGaviota: "S" };
-        
+
         pouch.guardarCompra({ ...state, titularEsPasajero: !!titularPago.nombre });
     }
 
@@ -898,7 +995,7 @@ console.log("Iniciar con la informacón de los pasajeros");
                         //"impresora": "", //BORRADO
                         //"porcAdm": 0, //BORRADO
                         //"vlrPago2": 0,//BORRADO
-                        //"valorSeguro": 0,//BORRADO
+                        valorSeguro: state.conSeguro ? state.valorSeguroPerPassenger : 0,
                         //"tipoPasajero": "A",//BORRADO
                         //"tiqueteNino": false,//BORRADO
                         ageAbordaje: "12", // que es?
@@ -968,7 +1065,133 @@ console.log("Iniciar con la informacón de los pasajeros");
 
         return Object.values(grupos);
     };
-    document.getElementById("lastStep4").addEventListener("click", async () => {
+
+    async function loadLegalTexts() {
+        try {
+            const nameFunction = "getTexto?type=politicas";
+            const lappizFunctionId = "4ca92059-3b1b-4708-94f9-67c4215a5b75";
+            const body = {};
+            const config = { nameFunction, lappizFunctionId, body, method: "GET" };
+            const response = await execLF(config);
+            if (!response.error && response.html) {
+                $("#legalTexts").html(response.html || "");
+            }
+        } catch (error) { }
+    }
+
+    async function getInsuranceValuePerPassenger(birthDate) {
+        if (!birthDate) return 0;
+        const viaje = state.viajeIda;
+        const lineas = viaje.lineas || [];
+        const currentDataLinea = lineas[0]?.data || null;
+        if (!currentDataLinea) return 0;
+        try {
+            const body = {
+                codEmpresa: currentDataLinea.empresa,
+                codDestino: currentDataLinea.codigoDestino,
+                fecha: currentDataLinea.fechaViaje,
+                codPromocion: null,
+                codConvenio: null,
+                ruta: currentDataLinea.ruta,
+                hora: currentDataLinea.hora,
+                fechaNacimiento: formatDateISO(birthDate),
+                valorLista: currentDataLinea.tarifa.valorTarifa,
+                codAgencia: "",
+                posicion: 1,
+                valorListaConexion: 0,
+                valorTarifaDesconexion: 0,
+                valorTarifaConexion: 0,
+                cortesia: "N",
+            };
+            const config = {
+                nameFunction: "Tarifa",
+                lappizFunctionId: "159aed1f-241a-4260-8e4b-e09d5fd335e9",
+                body,
+                method: "POST",
+            };
+            const response = await execLF(config);
+            if (response.error) return 0;
+            const valor =
+                response.data?.valorSeguro ??
+                response.data?.seguro ??
+                response.data?.valorSeguroViajero ??
+                response.data?.tarifa?.valorSeguro ??
+                0;
+            return Number(valor) || 0;
+        } catch (err) {
+            console.error("Error consultando el valor del seguro", err);
+            return 0;
+        }
+    }
+
+    async function onInsuranceToggle() {
+        const checked = document.getElementById("travelInsuranceSwitch").checked;
+        const amountEl = document.getElementById("insurancePerPassenger");
+        let total = 0;
+        let unitario = 0;
+        if (checked) {
+            for (let i = 1; i <= state.cantidadPasajeros; i++) {
+                const birthWidget = kendo.jQuery(`#birthdate-${i}`).data("kendoDatePicker");
+                const birthDate = birthWidget ? birthWidget.value() : null;
+                total += await getInsuranceValuePerPassenger(birthDate);
+            }
+            unitario = state.cantidadPasajeros
+                ? Math.round(total / state.cantidadPasajeros)
+                : 0;
+            if (amountEl) amountEl.textContent = "$" + unitario.toLocaleString();
+        } else {
+            if (amountEl) amountEl.textContent = "$0";
+        }
+        state.conSeguro = checked;
+        state.valorSeguroPerPassenger = checked ? unitario : 0;
+        state.valorSeguroTotal = checked ? total : 0;
+        await pouch.guardarCompra({ ...state });
+    }
+
+    function clearPassengerForms() {
+        for (let i = 1; i <= state.cantidadPasajeros; i++) {
+            ["idNumber", "first-name", "second-name", "first-last-name", "second-last-name", "phone", "email", "age"].forEach((prefix) => {
+                const el = document.getElementById(`${prefix}-${i}`);
+                if (el) {
+                    el.value = "";
+                    el.classList.remove("is-valid", "is-invalid");
+                }
+            });
+            const setNull = (selector, widget) => {
+                const w = kendo.jQuery(selector).data(widget);
+                if (w) w.value(null);
+            };
+            setNull(`#nationality-${i}`, "kendoComboBox");
+            setNull(`#gender-${i}`, "kendoComboBox");
+            setNull(`#birthdate-${i}`, "kendoDatePicker");
+            setNull(`#indicador-phone-${i}`, "kendoDropDownList");
+            const idTypeDDL = kendo.jQuery(`#idType-${i}`).data("kendoDropDownList");
+            if (idTypeDDL) {
+                idTypeDDL.value(null);
+                idTypeDDL.enable(false);
+                idTypeDDL.setDataSource(new kendo.data.DataSource({ data: [] }));
+            }
+            const card = document.getElementById(`card-passenger-${i}`);
+            const form = document.getElementById(`passenger-${i}`);
+            if (card) card.classList.add("d-none");
+            if (form) form.classList.remove("d-none");
+        }
+        const insuranceSwitch = document.getElementById("travelInsuranceSwitch");
+        if (insuranceSwitch) insuranceSwitch.checked = false;
+        const amountEl = document.getElementById("insurancePerPassenger");
+        if (amountEl) amountEl.textContent = "$0";
+        state.conSeguro = false;
+        state.valorSeguroPerPassenger = 0;
+        state.valorSeguroTotal = 0;
+        state.data = null;
+        titularPago.numeroIdentificacion = "";
+        titularPago.nombre = "";
+        pouch.guardarCompra({ ...state });
+        updateTitular();
+        validateAllField();
+    }
+
+    document.getElementById("closeModalBtn").addEventListener("click", async () => {
         const sw = await Swal.fire({
             text: `¿Esta seguro que quieres devolverte?\nse pueden perder los datos diligenciados`,
             icon: "warning",
@@ -976,8 +1199,36 @@ console.log("Iniciar con la informacón de los pasajeros");
             confirmButtonText: "Sí, volver",
             cancelButtonText: "Cancelar",
         });
-        if (!sw) return;
+        if (!sw.isConfirmed) return;
         goLocation('#/page/sillas/ExpresoBrasilia_Lappiz');
     });
-    document.getElementById("addPassangers").addEventListener("click", validatePassengerAges)
+
+    document.getElementById("clearPassengersBtn").addEventListener("click", clearPassengerForms);
+
+    document.getElementById("addPassangers").addEventListener("click", async () => {
+        const saved = await validatePassengerAges();
+        if (saved) {
+            Swal.fire({
+                title: "Guardado",
+                text: "Los cambios se guardaron correctamente.",
+                icon: "success",
+                confirmButtonText: "Entendido",
+            });
+        }
+    });
+
+    document.getElementById("travelInsuranceSwitch").addEventListener("change", onInsuranceToggle);
+
+    document.getElementById("continueToPaymentBtn").addEventListener("click", () => {
+        addPassagerPayload();
+        goLocation('#/page/metodoPago/ExpresoBrasilia_Lappiz');
+    });
+
+    if (state.conSeguro && state.valorSeguroPerPassenger > 0) {
+        const insuranceSwitch = document.getElementById("travelInsuranceSwitch");
+        const amountEl = document.getElementById("insurancePerPassenger");
+        if (insuranceSwitch) insuranceSwitch.checked = true;
+        if (amountEl) amountEl.textContent = "$" + state.valorSeguroPerPassenger.toLocaleString();
+    }
+    loadLegalTexts();
 })();

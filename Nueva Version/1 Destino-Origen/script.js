@@ -16,7 +16,9 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
     const compraActiva = await pouchService.obtenerCompraActiva();
     if (!compraActiva) await pouchService.limpiarExpiradas();
     const searchState = {
-        tripType: compraActiva && (compraActiva.isReturnSelected || compraActiva.fechaRegreso) ? "roundtrip" : "oneway",
+        tripType: !compraActiva
+            ? "roundtrip"
+            : (compraActiva.isReturnSelected || compraActiva.fechaRegreso) ? "roundtrip" : "oneway",
         origin: compraActiva?.origen || null,
         destination: compraActiva?.destino || null,
         departureDate: compraActiva?.fechaIda || null,
@@ -430,6 +432,7 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
             disableMobile: true,
             onChange: function (dates) {
                 selectedDates = dates.map(date => formatDateISO(date));
+                updateModalDateHint();
             }
         });
     }
@@ -474,6 +477,21 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
     function openDateModal() {
         const element = document.getElementById("dateModal");
         element.classList.remove("hidden");
+        updateModalDateHint();
+    }
+
+    function updateModalDateHint() {
+        const hint = document.getElementById("tripTypeModal");
+        if (!hint) return;
+        if (searchState.tripType === "oneway") {
+            hint.innerText = "Ida";
+        } else if (selectedDates.length === 0) {
+            hint.innerText = "Selecciona fecha de ida";
+        } else if (selectedDates.length === 1) {
+            hint.innerText = "Ahora selecciona fecha de regreso";
+        } else {
+            hint.innerText = "Ida y vuelta";
+        }
     }
 
     function closeDateModal() {
@@ -482,6 +500,17 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
     }
 
     function getValuesDates() {
+        if (searchState.tripType !== "oneway" && selectedDates.length < 2) {
+            Swal.fire({
+                toast: true,
+                position: "top",
+                icon: "warning",
+                title: "Selecciona también la fecha de regreso",
+                showConfirmButton: false,
+                timer: 2500
+            });
+            return;
+        }
         const value = selectedDates.join(" - ");
         searchState.departureDate = selectedDates[0];
         searchState.returnDate = selectedDates[1] || null;
