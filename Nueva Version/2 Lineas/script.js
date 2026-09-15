@@ -228,8 +228,8 @@
         <div class="card-body">
           <div class="d-flex align-items-center mb-4" style="justify-content: space-between;">
             <img src="${LOGOS[primera.empresa] || ''}" alt="logo servicio" class="mr-2" style="height:15px;">
-            <h5 class="mb-1">$${formatNumber(tarifaBase)}</h5>
-            ${mejorDesc ? `<p class="mb-1 text-success">$${formatNumber(tarifaDesc)}</p>` : ""}
+            <h5 class="mb-1 line-price">$${formatNumber(tarifaBase)} <span class="currency">cop</span></h5>
+            ${mejorDesc ? `<p class="mb-1 line-price">$${formatNumber(tarifaDesc)} <span class="currency">cop</span></p>` : ""}
           </div>
           <div class="row" style="display: flex;justify-content: space-between;flex-wrap: nowrap;align-items: center;">
             <div>

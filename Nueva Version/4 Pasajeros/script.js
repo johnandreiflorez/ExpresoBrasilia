@@ -96,7 +96,7 @@ console.log("Iniciar con la informacón de los pasajeros");
         <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="d-flex align-items-center gap-2">
                 ${isFirst ? '<span class="titular-badge">Titular</span>' : '<span class="titular-badge d-none">Titular</span>'}
-                <strong class="passenger-name-title" id="summary-name-${i}">Pasajero ${i}</strong>
+                <strong class="passenger-name-title pl-2" id="summary-name-${i}">Pasajero ${i}</strong>
             </div>
             <div class="d-flex align-items-center gap-1 text-muted font-weight-bold">
                 <small>P${i}</small>
@@ -1220,6 +1220,15 @@ console.log("Iniciar con la informacón de los pasajeros");
     document.getElementById("travelInsuranceSwitch").addEventListener("change", onInsuranceToggle);
 
     document.getElementById("continueToPaymentBtn").addEventListener("click", () => {
+        if (!validateAllField()) {
+            Swal.fire({
+                title: "Atención",
+                text: "Completa la información de todos los pasajeros antes de continuar a pago.",
+                icon: "warning",
+                confirmButtonText: "Entendido",
+            });
+            return;
+        }
         addPassagerPayload();
         goLocation('#/page/metodoPago/ExpresoBrasilia_Lappiz');
     });
