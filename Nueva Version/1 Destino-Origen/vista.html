@@ -44,8 +44,12 @@
 
             <label id="dateLabel">Fecha ida y vuelta</label>
             <!-- Fecha -->
-            <input type="text" class="form-control" id="fechaViaje" readonly placeholder="----/----/--  ----/----/--"
-                readonly style="height: 42px !important;margin: 12px !important;width: stretch !important;">
+            <div class="date-input-wrapper">
+                <input type="text" class="form-control" id="fechaViaje" readonly placeholder="----/----/--  ----/----/--"
+                    readonly style="height: 42px !important;margin: 12px !important;width: stretch !important;">
+                <img src="https://runtimetest.lappiz.io/assets/images/Expreso/calendario.svg" alt="Calendario"
+                    class="date-calendar-icon">
+            </div>
 
             <!-- Botón buscar -->
             <button id="searchBtn" class="btn-primary" disabled>Buscar</button>

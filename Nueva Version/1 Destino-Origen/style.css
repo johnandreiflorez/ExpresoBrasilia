@@ -33,6 +33,20 @@
     opacity: 0.5;
 }
 
+/* Ícono de calendario dentro del campo de fecha */
+.date-input-wrapper {
+    position: relative;
+}
+
+.date-calendar-icon {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 18px;
+    pointer-events: none;
+}
+
 
 .date-modal {
     position: fixed;
@@ -101,28 +115,69 @@
     background: #dfe3e8 !important;
 }
 
+/* =========================================================
+   COLORES DE TÍTULO Y LABELS DE CAMPOS
+   ========================================================= */
+#search-step h2,
+#search-step label {
+    color: #163b63;
+}
+
+/* =========================================================
+   KENDO COMBOBOX - POPUP / LISTA DESPLEGABLE
+   ========================================================= */
+.k-widget.k-combobox {
+    width: 100% !important;
+}
+
 .k-select,
 .k-combobox .k-state-hover .k-select {
     background-color: #ced3db00;
 }
 
+.k-combobox .k-input {
+    color: #2d3748 !important;
+}
+
 .k-animation-container {
-    width: 283px !important;
-    left: 50% !important;
-    transform: translate(-51%) !important;
+    width: auto !important;
+    left: auto !important;
+    transform: none !important;
 }
 
-.k-list-container.k-popup.k-group.k-reset{
-    border-color: rgb(241, 243, 246) !important;
-    background-color: rgb(241, 243, 246) !important;
-    width: stretch !important;
-    min-width: stretch !important;
+.k-list-container.k-popup.k-group.k-reset {
+    border: 1px solid #e2e8f0 !important;
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
 }
 
-.k-list-scroller{
-    background: #f1f3f6;
+.k-list-scroller {
+    background: #ffffff !important;
+    padding: 4px;
 }
 
-.k-dropdown-wrap.k-state-default.k-state-hover{
+.k-list .k-item {
+    padding: 10px 16px !important;
+    font-size: 0.9rem !important;
+    color: #2d3748 !important;
+    border-radius: 8px !important;
+    cursor: pointer;
+}
+
+.k-list .k-item.k-state-hover,
+.k-list .k-item.k-state-selected {
+    background-color: #1f4368 !important;
+    color: #ffffff !important;
+}
+
+.k-list .k-item.k-state-focused {
+    background-color: #edf4fa !important;
+    color: #163b63 !important;
+}
+
+.k-dropdown-wrap.k-state-default.k-state-hover {
     box-shadow: none !important;
 }
