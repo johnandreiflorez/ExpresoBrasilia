@@ -208,8 +208,8 @@
             const amenityIcons = {
                 ACP: "video",
                 WIF: "wifi",
-                EAB: "pelicula",
-                TMC: "play",
+                EAB: "musica",
+                TMC: "cargador",
             };
             let amenitiesHtml = '';
             const aminidades = consolidateAmenities(lineas);
@@ -271,7 +271,7 @@
         </div>
 
         <div class="badge-viaje">
-            <i class="fas fa-info-circle"></i>
+            <img src="https://runtimetest.lappiz.io/assets/images/expreso/info.svg" alt="alerta" style="width: 16px; height: 16px;">
             <span>Viaje de paso</span>
         </div>
 

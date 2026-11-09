@@ -31,6 +31,7 @@
             <div class="info-icon-wrapper">
                 <i class="fa fa-info-circle"></i>
             </div>
+
             <div class="info-alert-text">
                 Los datos del titular de la compra se usarán para emitir la factura electrónica.
             </div>
@@ -60,15 +61,25 @@
             <!-- Seguros del viaje (visible al completar todos los pasajeros) -->
             <div id="insuranceSection" class="d-none mt-3">
                 <div class="insurance-card">
-                    <div class="d-flex justify-content-between align-items-center gap-2">
-                        <div>
-                            <h5 class="insurance-title mb-0">Los seguros del viaje</h5>
-                            <small class="text-muted">Se agregarán <span id="insurancePerPassenger">$0</span> al precio del viaje por pasajero</small>
+                    <div class="insurance-header">
+                        <div class="insurance-description">
+                            <h5 class="insurance-title mb-1">Viaja más seguro</h5>
+                            <button type="button" id="insuranceDetailsToggle" class="insurance-details-toggle"
+                                aria-expanded="false" aria-controls="insuranceDetails">
+                                Ver detalles <span class="insurance-chevron" aria-hidden="true">⌄</span>
+                            </button>
                         </div>
-                        <div class="form-check form-switch mb-0">
-                            <input class="form-check-input" type="checkbox" id="travelInsuranceSwitch" role="switch">
+                        <div class="insurance-price">
+                            <span id="insurancePerPassenger">$0</span>
+                            <span class="insurance-price-unit">COP c/u</span>
+                            <label class="form-check form-switch insurance-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="travelInsuranceSwitch" role="switch"
+                                    aria-label="Agregar seguro de viaje" disabled>
+                            </label>
                         </div>
                     </div>
+                    <p id="insuranceStatus" class="insurance-status mb-0" role="status">Cargando seguro...</p>
+                    <div id="insuranceDetails" class="insurance-details" hidden></div>
                 </div>
             </div>
 
@@ -83,5 +94,24 @@
                 </button>
             </div>
         </div>
+    </div>
+</div>
+
+<div id="birthDateModal" class="date-modal hidden">
+    <div class="date-sheet">
+        <div class="date-header">
+            <div>
+                <h2>Selecciona fecha</h2>
+                <span id="birthDateModalLabel">Fecha de nacimiento</span>
+            </div>
+            <button type="button" id="closeBirthDateModal"
+                style="transform: translate(350px, -60px);border: none;background: none;">✕</button>
+        </div>
+
+        <div id="birthDateCalendar"></div>
+
+        <button type="button" class="btn-accept" id="acceptBirthDate" disabled>
+            Aceptar
+        </button>
     </div>
 </div>

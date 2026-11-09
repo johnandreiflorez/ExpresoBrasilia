@@ -32,18 +32,137 @@ console.log("Iniciar con la informacón de los pasajeros");
         valorSeguroTotal: Number(compra.valorSeguroTotal) || 0,
         data: compra.data || null,
     };
+    let insuranceConfig = null;
+    let activeBirthDatePicker = null;
+    let activeBirthDatePassengerIndex = null;
+    let pendingBirthDate = null;
+    let suppressBirthDateOpen = false;
+    let birthDateCalendar = null;
+    let birthDateCalendarLoadPromise = null;
     const titularPago = {
         numeroIdentificacion: "",
         nombre: "",
     };
     const tiposIdentificacionEndpoint = "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/getTiposIdentificacion?empresa=EC&pais=";
+
+    // -----------------------
+    // Autenticacion y servicios nuevos
+    // -----------------------
+    const EB_LF = "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/";
+    async function ebGetToken() {
+        try {
+            const cached = sessionStorage.getItem("EB_TOKEN");
+            if (cached) return cached;
+        } catch (e) { }
+        const res = await fetch(EB_LF + "getTokenInterno", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        const token = data && data.status ? data.token : "";
+        if (token) {
+            try { sessionStorage.setItem("EB_TOKEN", token); } catch (e) { }
+        }
+        return token;
+    }
+    function ebTokenSync() {
+        try { return sessionStorage.getItem("EB_TOKEN") || ""; } catch (e) { return ""; }
+    }
+    function ebUrlToken(url) {
+        const t = ebTokenSync();
+        return t ? url + (url.indexOf("?") >= 0 ? "&" : "?") + "token=" + encodeURIComponent(t) : url;
+    }
+    async function ebExec(config) {
+        try {
+            const token = await ebGetToken();
+            if (token) config.body = Object.assign({}, config.body || {}, { token });
+            return await execLF(config);
+        } catch (err) {
+            console.error("execLF error:", err);
+            return { error: true, message: err.message || String(err) };
+        }
+    }
+    function ebTransaccionId() {
+        if (compra.llaveTransaccion) return compra.llaveTransaccion;
+        if (state.llaveTransaccion) return state.llaveTransaccion;
+        try {
+            const tx = JSON.parse(sessionStorage.getItem("EB_TRANSACCION") || "null");
+            return tx && tx.llaveTransaccion ? tx.llaveTransaccion : null;
+        } catch (e) { return null; }
+    }
+    async function ebActualizarCompra(bodyUpdate) {
+        const transaccion = ebTransaccionId();
+        if (!transaccion) {
+            console.warn("actualizarCompra omitido: sin llaveTransaccion");
+            return null;
+        }
+        try {
+            const token = await ebGetToken();
+            const res = await fetch(EB_LF + "actualizarCompra", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(Object.assign({}, bodyUpdate, { transaccion, token }))
+            });
+            const data = await res.json();
+            if (data && data.error) console.error("actualizarCompra:", data.message);
+            return data;
+        } catch (e) {
+            console.error("actualizarCompra error:", e);
+            return null;
+        }
+    }
+    async function ebRegistrarPasajeros() {
+        const transaccion = ebTransaccionId();
+        if (!transaccion || !state.data || !Array.isArray(state.data.tiquetes)) return;
+        const token = await ebGetToken();
+        for (let i = 0; i < state.data.tiquetes.length; i++) {
+            const t = state.data.tiquetes[i];
+            const p = t.pasajero || {};
+            const bodyPax = {
+                numeroIdentificacion: p.numeroIdentificacion,
+                pais: p.pais,
+                tipoIdentificacion: p.tipoIdentificacion,
+                primerNombre: p.primerNombre,
+                segundoNombre: p.segundoNombre || "",
+                primerApellido: p.primerApellido,
+                segundoApellido: p.segundoApellido || "",
+                fechaNacimiento: p.fechaNacimiento,
+                sexo: p.sexo,
+                codigoPais: p.codigoPais || null,
+                celular: p.celular,
+                email: p.email,
+                lector: "N",
+                id: { empresa: p.empresa || "EC", numeroIdentificacion: p.numeroIdentificacion },
+                nombreCompleto: p.nombreCompleto,
+                tipoPasajero: p.tipoPasajero || "A",
+                descripcionTipoPasajero: p.descripcionTipoPasajero || "ADULTO",
+                transaccion: transaccion,
+                indice: i + 1,
+                token: token
+            };
+            try {
+                const res = await fetch(EB_LF + "registrarPasajero", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(bodyPax)
+                });
+                const data = await res.json();
+                if (data && data.error) console.error("registrarPasajero:", data.message);
+            } catch (e) {
+                console.error("registrarPasajero error:", e);
+            }
+        }
+        await ebActualizarCompra({ estado: "PP", estadoProceso: "PS" });
+    }
+    await ebGetToken();
+
     // Metodo encargado para ejecutar una lappoz function
     let nameFunction = 'Paises';
     let lappizFunctionId = '5e011a16-1643-48ed-bbbd-5a3853a62ba8';
     let body = null
     let method = 'GET'
     let config = { nameFunction, lappizFunctionId, body, method }
-    const dataPaises = await execLF(config);
+    const dataPaises = await ebExec(config);
 
     buildPassengerForms();
 
@@ -96,7 +215,7 @@ console.log("Iniciar con la informacón de los pasajeros");
         <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="d-flex align-items-center gap-2">
                 ${isFirst ? '<span class="titular-badge">Titular</span>' : '<span class="titular-badge d-none">Titular</span>'}
-                <strong class="passenger-name-title pl-2" id="summary-name-${i}">Pasajero ${i}</strong>
+                <strong class="passenger-name-title" id="summary-name-${i}">Pasajero ${i}</strong>
             </div>
             <div class="d-flex align-items-center gap-1 text-muted font-weight-bold">
                 <small>P${i}</small>
@@ -239,23 +358,22 @@ console.log("Iniciar con la informacón de los pasajeros");
                 },
             });
 
+            const latestSelectableBirthDate = new Date();
+            latestSelectableBirthDate.setHours(23, 59, 59, 999);
             kendo.jQuery(`#birthdate-${i}`).kendoDatePicker({
                 format: "dd/MM/yyyy",
-                max: new Date(),
+                max: latestSelectableBirthDate,
                 adaptiveMode: "auto",
                 placeholder: "Fecha de nacimiento",
-                change: () => {
-                    const field = document.getElementById(`birthdate-${i}`);
-                    const dateVal = kendo.jQuery(`#birthdate-${i}`).data("kendoDatePicker").value();
-                    if (dateVal) {
-                        const calculatedAge = getAge(dateVal);
-                        document.getElementById(`age-${i}`).value = calculatedAge >= 0 ? `${calculatedAge} años` : "";
+                open: (event) => {
+                    event.preventDefault();
+                    if (!suppressBirthDateOpen) {
+                        openBirthDateModal(event.sender, i);
                     }
-                    validateField(field);
-                    toggleViewCardPassager(field);
-                }
+                },
+                change: () => handleBirthDateChange(i)
             });
-
+            
             kendo.jQuery(`#indicador-phone-${i}`).kendoDropDownList({
                 dataSource: dataPaises,
                 dataTextField: "Indicativo",
@@ -269,7 +387,8 @@ console.log("Iniciar con la informacón de los pasajeros");
                     toggleViewCardPassager(field);
                 },
             });
-
+            kendo.jQuery(`#birthdate-${i}`).data("kendoDatePicker")?.input?.attr("readonly", "readonly");
+            
             // Restaurar datos del pasajero si ya fueron guardados en una sesión anterior
             if (state.data && state.data.tiquetes && state.data.tiquetes.length > 0) {
                 const currenPassanger = state.data.tiquetes[i - 1];
@@ -342,7 +461,7 @@ console.log("Iniciar con la informacón de los pasajeros");
                 new kendo.data.DataSource({
                     transport: {
                         read: {
-                            url: tiposIdentificacionEndpoint + codigoPais,
+                            url: () => ebUrlToken(tiposIdentificacionEndpoint + codigoPais),
                             dataType: "json",
                         },
                     },
@@ -380,6 +499,154 @@ console.log("Iniciar con la informacón de los pasajeros");
         };
         intentar();
     }
+
+    function getLatestSelectableBirthDate() {
+        const latestDate = new Date();
+        latestDate.setHours(23, 59, 59, 999);
+        return latestDate;
+    }
+
+    function formatBirthDateISO(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    function loadBirthDateCalendar() {
+        if (window.flatpickr && window.flatpickr.l10ns.es) return Promise.resolve();
+        if (birthDateCalendarLoadPromise) return birthDateCalendarLoadPromise;
+
+        birthDateCalendarLoadPromise = new Promise((resolve, reject) => {
+            if (!document.querySelector('link[href*="flatpickr.min.css"]')) {
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = "https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css";
+                document.head.appendChild(link);
+            }
+
+            const script = document.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/flatpickr";
+            script.onload = () => {
+                const localeScript = document.createElement("script");
+                localeScript.src = "https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js";
+                localeScript.onload = resolve;
+                localeScript.onerror = () => reject(new Error("No fue posible cargar el idioma del calendario."));
+                document.body.appendChild(localeScript);
+            };
+            script.onerror = () => reject(new Error("No fue posible cargar Flatpickr."));
+            document.body.appendChild(script);
+        }).catch((error) => {
+            birthDateCalendarLoadPromise = null;
+            throw error;
+        });
+        return birthDateCalendarLoadPromise;
+    }
+
+    function ensureBirthDateCalendar() {
+        if (birthDateCalendar) return birthDateCalendar;
+        birthDateCalendar = flatpickr("#birthDateCalendar", {
+            inline: true,
+            mode: "single",
+            maxDate: formatBirthDateISO(getLatestSelectableBirthDate()),
+            dateFormat: "Y-m-d",
+            locale: "es",
+            showMonths: 1,
+            disableMobile: true,
+            onChange: (dates) => {
+                pendingBirthDate = dates[0] || null;
+                document.getElementById("acceptBirthDate").disabled = !pendingBirthDate;
+            }
+        });
+        return birthDateCalendar;
+    }
+
+    function handleBirthDateChange(passengerIndex) {
+        const field = document.getElementById(`birthdate-${passengerIndex}`);
+        if (!field) return;
+        const datePicker = kendo.jQuery(field).data("kendoDatePicker");
+        if (!datePicker) return;
+        const dateValue = datePicker ? datePicker.value() : null;
+        const ageField = document.getElementById(`age-${passengerIndex}`);
+
+        if (dateValue) {
+            const calculatedAge = getAge(dateValue);
+            if (ageField) ageField.value = calculatedAge >= 0 ? `${calculatedAge} años` : "";
+        }
+        validateField(field);
+        toggleViewCardPassager(field);
+    }
+
+    async function openBirthDateModal(datePicker, passengerIndex) {
+        activeBirthDatePicker = datePicker;
+        activeBirthDatePassengerIndex = passengerIndex;
+        try {
+            await loadBirthDateCalendar();
+            if (activeBirthDatePicker !== datePicker) return;
+            datePicker.max(getLatestSelectableBirthDate());
+            const currentValue = datePicker.value();
+            pendingBirthDate = currentValue && currentValue <= getLatestSelectableBirthDate()
+                ? currentValue
+                : null;
+            const calendar = ensureBirthDateCalendar();
+            calendar.set("maxDate", formatBirthDateISO(getLatestSelectableBirthDate()));
+            if (pendingBirthDate) {
+                calendar.setDate(pendingBirthDate, false);
+            } else {
+                calendar.clear();
+            }
+            document.getElementById("acceptBirthDate").disabled = !pendingBirthDate;
+            document.getElementById("birthDateModal").classList.remove("hidden");
+        } catch (error) {
+            if (activeBirthDatePicker !== datePicker) return;
+            activeBirthDatePicker = null;
+            activeBirthDatePassengerIndex = null;
+            console.error("Error cargando el calendario de nacimiento:", error);
+            Swal.fire({
+                icon: "error",
+                title: "Calendario no disponible",
+                text: "No fue posible cargar el calendario. Intenta nuevamente."
+            });
+        }
+    }
+
+    function closeBirthDateModal() {
+        document.getElementById("birthDateModal").classList.add("hidden");
+        const input = activeBirthDatePicker?.input;
+        activeBirthDatePicker = null;
+        activeBirthDatePassengerIndex = null;
+        pendingBirthDate = null;
+        if (input) {
+            suppressBirthDateOpen = true;
+            input.trigger("focus");
+            suppressBirthDateOpen = false;
+        }
+    }
+
+    document.getElementById("closeBirthDateModal").addEventListener("click", closeBirthDateModal);
+    document.getElementById("birthDateModal").addEventListener("click", (event) => {
+        if (event.target.id === "birthDateModal") closeBirthDateModal();
+    });
+    document.getElementById("acceptBirthDate").addEventListener("click", (event) => {
+        event.preventDefault();
+        const datePicker = activeBirthDatePicker;
+        const passengerIndex = activeBirthDatePassengerIndex;
+        const selectedDate = pendingBirthDate;
+        if (!datePicker || !passengerIndex || !(selectedDate instanceof Date)) return;
+        if (Number.isNaN(selectedDate.getTime()) || selectedDate > getLatestSelectableBirthDate()) {
+            document.getElementById("acceptBirthDate").disabled = true;
+            return;
+        }
+
+        datePicker.value(selectedDate);
+        handleBirthDateChange(passengerIndex);
+        closeBirthDateModal();
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !document.getElementById("birthDateModal").classList.contains("hidden")) {
+            closeBirthDateModal();
+        }
+    });
 
     // Marca como titular al primer adulto (>=18) registrado; sin adultos, no hay titular
     function updateTitular() {
@@ -471,7 +738,7 @@ console.log("Iniciar con la informacón de los pasajeros");
             "cortesia": 'N'
         }
         let config = { nameFunction, lappizFunctionId, body, method }
-        const response = await execLF(config);
+        const response = await ebExec(config);
         if (response.error == true) {
             Swal.fire({
                 title: "Problemas al obtener la tarifa",
@@ -702,7 +969,7 @@ console.log("Iniciar con la informacón de los pasajeros");
             // Metodo encargado para ejecutar una lappoz function
             let config = { nameFunction, lappizFunctionId, body, method };
             try {
-                const data = await execLF(config);
+                const data = await ebExec(config);
                 if (data.data && data.data.nombrePasajero && data.data.puesto) {
                     const mensaje = `¡Atención! El pasajero ${data.data.nombrePasajero} ya se encuentra registrado en el puesto ${data.data.puesto} para la misma ruta.`;
                     Swal.fire({
@@ -730,8 +997,8 @@ console.log("Iniciar con la informacón de los pasajeros");
     async function fetchAndFillPassenger(identificacion, index) {
         if (!identificacion || !index) return;
         try {
-            const url = `https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/obtenerPasajero/${identificacion}`;
-            const res = await fetch(url);
+            const url = `https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/obtenerPasajero?numDocumento=${encodeURIComponent(identificacion)}`;
+            const res = await fetch(ebUrlToken(url));
             if (!res.ok) {
                 console.warn('obtenerPasajero response not ok', res.status);
                 return;
@@ -1072,81 +1339,160 @@ console.log("Iniciar con la informacón de los pasajeros");
             const lappizFunctionId = "4ca92059-3b1b-4708-94f9-67c4215a5b75";
             const body = {};
             const config = { nameFunction, lappizFunctionId, body, method: "GET" };
-            const response = await execLF(config);
+            const response = await ebExec(config);
             if (!response.error && response.html) {
                 $("#legalTexts").html(response.html || "");
             }
         } catch (error) { }
     }
 
-    async function getInsuranceValuePerPassenger(birthDate) {
-        if (!birthDate) return 0;
-        const viaje = state.viajeIda;
-        const lineas = viaje.lineas || [];
-        const currentDataLinea = lineas[0]?.data || null;
-        if (!currentDataLinea) return 0;
+    function formatInsuranceAmount(value) {
+        return "$ " + Number(value).toLocaleString("es-CO");
+    }
+
+    function getInsuranceCompany() {
+        const linea = state.viajeIda?.lineas?.[0]?.data;
+        return linea?.empresa || compra.usuarioVenta?.empresa || compra.empresa || "EC";
+    }
+
+    function addInsuranceDetail(container, description) {
+        const item = document.createElement("div");
+        item.className = "insurance-detail-item";
+
+        const icon = document.createElement("img");
+        icon.className = "insurance-detail-icon";
+        icon.src = "https://runtimetest.lappiz.io/assets/images/Expreso/seguro.svg";
+        icon.alt = "";
+        icon.setAttribute("aria-hidden", "true");
+        icon.addEventListener("error", () => {
+            const fallback = document.createElement("span");
+            fallback.className = "insurance-detail-icon-fallback";
+            fallback.innerHTML = '<i class="fa fa-users" aria-hidden="true"></i>';
+            icon.replaceWith(fallback);
+        }, { once: true });
+
+        const text = document.createElement("span");
+        text.textContent = description;
+        item.append(icon, text);
+        container.appendChild(item);
+    }
+
+    function addInsuranceLink(container, label, href) {
+        if (!href) return;
+        let url;
         try {
-            const body = {
-                codEmpresa: currentDataLinea.empresa,
-                codDestino: currentDataLinea.codigoDestino,
-                fecha: currentDataLinea.fechaViaje,
-                codPromocion: null,
-                codConvenio: null,
-                ruta: currentDataLinea.ruta,
-                hora: currentDataLinea.hora,
-                fechaNacimiento: formatDateISO(birthDate),
-                valorLista: currentDataLinea.tarifa.valorTarifa,
-                codAgencia: "",
-                posicion: 1,
-                valorListaConexion: 0,
-                valorTarifaDesconexion: 0,
-                valorTarifaConexion: 0,
-                cortesia: "N",
-            };
-            const config = {
-                nameFunction: "Tarifa",
-                lappizFunctionId: "159aed1f-241a-4260-8e4b-e09d5fd335e9",
-                body,
-                method: "POST",
-            };
-            const response = await execLF(config);
-            if (response.error) return 0;
-            const valor =
-                response.data?.valorSeguro ??
-                response.data?.seguro ??
-                response.data?.valorSeguroViajero ??
-                response.data?.tarifa?.valorSeguro ??
-                0;
-            return Number(valor) || 0;
-        } catch (err) {
-            console.error("Error consultando el valor del seguro", err);
-            return 0;
+            url = new URL(href, window.location.origin);
+        } catch (error) {
+            console.error("Enlace de seguro no válido", error);
+            return;
+        }
+        if (url.protocol !== "https:" && url.protocol !== "http:") return;
+
+        const link = document.createElement("a");
+        link.href = url.href;
+        link.textContent = label;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        container.appendChild(link);
+    }
+
+    function renderInsuranceDetails() {
+        const details = document.getElementById("insuranceDetails");
+        if (!details) return;
+        details.replaceChildren();
+
+        const descriptions = [
+            ...(Array.isArray(insuranceConfig?.detalleSeguro) ? insuranceConfig.detalleSeguro : []),
+            ...(Array.isArray(insuranceConfig?.recomendacionWeb) ? insuranceConfig.recomendacionWeb : []),
+        ];
+        descriptions.forEach((detail) => {
+            if (detail?.descripcion) addInsuranceDetail(details, String(detail.descripcion));
+        });
+
+        const links = document.createElement("div");
+        links.className = "insurance-links";
+        addInsuranceLink(links, "Términos y condiciones del seguro", insuranceConfig?.terminosCondicionesSeguro);
+        addInsuranceLink(links, "Política del seguro", insuranceConfig?.politicaSeguro);
+        if (links.childElementCount) details.appendChild(links);
+        if (!details.childElementCount) {
+            const emptyMessage = document.createElement("p");
+            emptyMessage.className = "mb-0 text-muted";
+            emptyMessage.textContent = "No hay detalles adicionales disponibles.";
+            details.appendChild(emptyMessage);
+        }
+    }
+
+    async function loadInsuranceConfiguration() {
+        const status = document.getElementById("insuranceStatus");
+        const amount = document.getElementById("insurancePerPassenger");
+        const insuranceSwitch = document.getElementById("travelInsuranceSwitch");
+        try {
+            const url = EB_LF + "configuracionPagina?empresa=" + encodeURIComponent(getInsuranceCompany());
+            const response = await fetch(ebUrlToken(url));
+            if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
+            const result = await response.json();
+            if (result?.error) throw new Error(result.message || "No fue posible obtener la configuración del seguro.");
+
+            insuranceConfig = result?.data || result;
+            const price = Number(insuranceConfig?.valorSeguro);
+            if (!Number.isFinite(price) || price < 0) {
+                throw new Error("La configuración del seguro no contiene un valor válido.");
+            }
+
+            if (amount) amount.textContent = formatInsuranceAmount(price);
+            if (insuranceSwitch) {
+                insuranceSwitch.disabled = price <= 0;
+                insuranceSwitch.checked = state.conSeguro && price > 0;
+            }
+            if (price > 0) {
+                state.valorSeguroPerPassenger = price;
+                state.valorSeguroTotal = state.conSeguro ? price * state.cantidadPasajeros : 0;
+                if (status) status.textContent = "";
+            } else {
+                state.conSeguro = false;
+                state.valorSeguroPerPassenger = 0;
+                state.valorSeguroTotal = 0;
+                if (status) status.textContent = "El seguro no está disponible para este viaje.";
+            }
+            renderInsuranceDetails();
+            await pouch.guardarCompra({ ...state });
+        } catch (error) {
+            console.error("Error consultando la configuración del seguro", error);
+            insuranceConfig = null;
+            state.conSeguro = false;
+            state.valorSeguroPerPassenger = 0;
+            state.valorSeguroTotal = 0;
+            if (amount) amount.textContent = formatInsuranceAmount(0);
+            if (insuranceSwitch) {
+                insuranceSwitch.checked = false;
+                insuranceSwitch.disabled = true;
+            }
+            if (status) status.textContent = "No fue posible cargar el seguro. Intenta nuevamente más tarde.";
+            renderInsuranceDetails();
+            await pouch.guardarCompra({ ...state });
         }
     }
 
     async function onInsuranceToggle() {
         const checked = document.getElementById("travelInsuranceSwitch").checked;
-        const amountEl = document.getElementById("insurancePerPassenger");
-        let total = 0;
-        let unitario = 0;
-        if (checked) {
-            for (let i = 1; i <= state.cantidadPasajeros; i++) {
-                const birthWidget = kendo.jQuery(`#birthdate-${i}`).data("kendoDatePicker");
-                const birthDate = birthWidget ? birthWidget.value() : null;
-                total += await getInsuranceValuePerPassenger(birthDate);
-            }
-            unitario = state.cantidadPasajeros
-                ? Math.round(total / state.cantidadPasajeros)
-                : 0;
-            if (amountEl) amountEl.textContent = "$" + unitario.toLocaleString();
-        } else {
-            if (amountEl) amountEl.textContent = "$0";
+        const unitario = Number(insuranceConfig?.valorSeguro) || 0;
+        if (checked && unitario <= 0) {
+            document.getElementById("travelInsuranceSwitch").checked = false;
+            return;
         }
         state.conSeguro = checked;
         state.valorSeguroPerPassenger = checked ? unitario : 0;
-        state.valorSeguroTotal = checked ? total : 0;
+        state.valorSeguroTotal = checked ? unitario * state.cantidadPasajeros : 0;
         await pouch.guardarCompra({ ...state });
     }
+
+    document.getElementById("insuranceDetailsToggle").addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        const details = document.getElementById("insuranceDetails");
+        const expanded = button.getAttribute("aria-expanded") === "true";
+        button.setAttribute("aria-expanded", String(!expanded));
+        details.hidden = expanded;
+    });
 
     function clearPassengerForms() {
         for (let i = 1; i <= state.cantidadPasajeros; i++) {
@@ -1219,7 +1565,7 @@ console.log("Iniciar con la informacón de los pasajeros");
 
     document.getElementById("travelInsuranceSwitch").addEventListener("change", onInsuranceToggle);
 
-    document.getElementById("continueToPaymentBtn").addEventListener("click", () => {
+    document.getElementById("continueToPaymentBtn").addEventListener("click", async () => {
         if (!validateAllField()) {
             Swal.fire({
                 title: "Atención",
@@ -1230,14 +1576,10 @@ console.log("Iniciar con la informacón de los pasajeros");
             return;
         }
         addPassagerPayload();
+        await ebRegistrarPasajeros();
         goLocation('#/page/metodoPago/ExpresoBrasilia_Lappiz');
     });
 
-    if (state.conSeguro && state.valorSeguroPerPassenger > 0) {
-        const insuranceSwitch = document.getElementById("travelInsuranceSwitch");
-        const amountEl = document.getElementById("insurancePerPassenger");
-        if (insuranceSwitch) insuranceSwitch.checked = true;
-        if (amountEl) amountEl.textContent = "$" + state.valorSeguroPerPassenger.toLocaleString();
-    }
+    loadInsuranceConfiguration();
     loadLegalTexts();
 })();

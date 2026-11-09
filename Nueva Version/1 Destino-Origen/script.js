@@ -8,9 +8,121 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
         destinos: "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/getDestinos?empresa=EC&origen=",
         vigencia: "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/vigenciaVenta"
     };
-    loadOrigenes();
-    loadDestinos('CTG');
-    await G_addHeaderPages();
+
+    // ---------------------------
+    // Autenticacion: token al inicio para todos los servicios
+    // ---------------------------
+    const EB_LF = "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/";
+    let tokenPromise = null;
+    async function ebGetToken() {
+        try {
+            const cached = sessionStorage.getItem("EB_TOKEN");
+            if (cached) return cached;
+        } catch (e) { }
+
+        if (!tokenPromise) {
+            tokenPromise = (async () => {
+                const res = await fetch(EB_LF + "getTokenInterno", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+                if (!res.ok) throw new Error(`Error HTTP ${res.status} al obtener el token.`);
+                const data = await res.json();
+                const token = data && data.status ? data.token : "";
+                if (token) {
+                    try { sessionStorage.setItem("EB_TOKEN", token); } catch (e) { }
+                }
+                return token;
+            })();
+        }
+
+        try {
+            return await tokenPromise;
+        } finally {
+            tokenPromise = null;
+        }
+    }
+    async function ebWithToken(url) {
+        const token = await ebGetToken();
+        if (!token) return url;
+        return url + (url.indexOf("?") >= 0 ? "&" : "?") + "token=" + encodeURIComponent(token);
+    }
+    let transaccionData = null;
+    async function ebInitTransaccion() {
+        try {
+            const res = await fetch(await ebWithToken(EB_LF + "obtenerTransaccion"));
+            const data = await res.json();
+            if (data && !data.error && data.data) {
+                transaccionData = data.data;
+                try { sessionStorage.setItem("EB_TRANSACCION", JSON.stringify(transaccionData)); } catch (e) { }
+            } else {
+                console.error("obtenerTransaccion:", data && data.message);
+            }
+        } catch (e) {
+            console.error("obtenerTransaccion error:", e);
+        }
+    }
+    const serviceInitialization = ebGetToken()
+        .then(() => ebInitTransaccion())
+        .catch((error) => {
+            console.error("Error inicializando servicios de búsqueda:", error);
+        });
+
+    async function ebCrearCompra(p) {
+        if (!transaccionData || !transaccionData.llaveTransaccion) return;
+        try {
+            const empresa = (transaccionData.usuario && transaccionData.usuario.empresa) || "EC";
+            const fecha = new Date().toISOString().replace("T", " ").replace("Z", "").substring(0, 23);
+            const token = await ebGetToken();
+            const body = {
+                transaccion: transaccionData.llaveTransaccion,
+                fechaTransaccion: fecha,
+                origen: p.origen,
+                destino: p.destino,
+                fechaIda: p.fechaIda,
+                fechaVuelta: p.fechaRegreso || null,
+                idaYVuelta: p.fechaRegreso ? "S" : "N",
+                estado: "IT",
+                estadoProceso: "IT",
+                empresa,
+                token
+            };
+            const res = await fetch(EB_LF + "crearCompra", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (data && data.error) console.error("crearCompra:", data.message);
+        } catch (e) {
+            console.error("crearCompra error:", e);
+        }
+    }
+
+    const pouchInitialization = G_loadScriptAsync(
+        "https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js",
+        "cdn_pouch"
+    );
+    const headerInitialization = pouchInitialization
+        .then(() => G_addHeaderPages())
+        .catch((error) => {
+            console.error("Error cargando el encabezado:", error);
+        });
+    try {
+        await pouchInitialization;
+        if (typeof PouchDB === "undefined") {
+            throw new Error("PouchDB no se cargó correctamente.");
+        }
+    } catch (error) {
+        console.error("Error cargando PouchDB:", error);
+        Swal.fire({
+            icon: "error",
+            title: "No se pudo iniciar la compra",
+            text: "No fue posible preparar el almacenamiento local. Recarga la página para intentarlo de nuevo."
+        });
+        return;
+    }
+    applyKendoComboStyles();
     //G_addIdApp_page();
     const pouchService = new G_PouchService();
     const compraActiva = await pouchService.obtenerCompraActiva();
@@ -27,46 +139,96 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
 
     let selectedDates = [];
     let calendar;
+    let destinationRequestId = 0;
+    let vigenciaRequestId = 0;
+    let flatpickrLoadPromise = null;
 
-    async function initSearchStep() {
-        await loadFlatpickr();
-        await restoreCompraActiva();
-        initFecha(searchState.tripType === "oneway" ? "single" : "range");
+    function initSearchStep() {
+        restoreCompraActiva();
+        loadOrigenes();
         attachEvents();
+        loadFlatpickr()
+            .then(() => initFecha(searchState.tripType === "oneway" ? "single" : "range"))
+            .catch((error) => console.error("Error cargando el calendario:", error));
     }
 
     const formatDateISO = d => {
-        const date = new Date(d);
-        return date.toISOString().slice(0, 10);
+        const date = d instanceof Date
+            ? d
+            : /^\d{4}-\d{2}-\d{2}$/.test(String(d))
+                ? new Date(`${d}T00:00:00`)
+                : new Date(d);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
     };
+
     async function loadOrigenes() {
-        const idTarget = "originSelect"
+        const idTarget = "originSelect";
         initKendoCombobox(idTarget, async (e) => {
             searchState.origin = e.sender.value() || null;
+            searchState.destination = null;
+            const destinationWidget = kendo.jQuery("#destinationSelect").data("kendoComboBox");
+            if (destinationWidget) destinationWidget.value("");
             await loadDestinos(e.sender.value());
-            await getVigencia();
+            if (searchState.destination) await getVigencia();
             validateForm();
-        })
-        const response = await fetch(API.origenes);
-        const data = await response.json();
-        updateKendoComboboxData(idTarget, data.data)
+        });
+        initDestinationCombobox();
 
-        if (searchState.origin) {
-            const widget = kendo.jQuery("#originSelect").data("kendoComboBox");
-            if (widget) {
-                widget.value(searchState.origin);
+        const originWidget = kendo.jQuery(`#${idTarget}`).data("kendoComboBox");
+        if (originWidget) {
+            originWidget.input.attr("placeholder", "Cargando orígenes...");
+            originWidget.enable(false);
+        }
+
+        try {
+            const response = await fetch(await ebWithToken(API.origenes));
+            if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
+            const result = await response.json();
+            if (result?.error || !Array.isArray(result?.data)) {
+                throw new Error(result?.message || "La respuesta de orígenes no tiene un formato válido.");
+            }
+            updateKendoComboboxData(idTarget, result.data);
+            if (originWidget) originWidget.enable(true);
+
+            if (searchState.origin) {
+                originWidget?.value(searchState.origin);
                 await loadDestinos(searchState.origin);
             }
+        } catch (error) {
+            console.error("Error cargando los orígenes:", error);
+            if (originWidget) {
+                originWidget.input.attr("placeholder", "No fue posible cargar los orígenes");
+                originWidget.enable(false);
+            }
         }
-        //setControlKendoCombobox(data.data, idTarget);
     }
 
     async function getVigencia() {
         const origen = searchState.origin;
         const destino = searchState.destination;
-        const response = await fetch(`${API.vigencia}?empresa=EC&origen=${origen}&destino=${destino}`);
-        const data = await response.json();
-        updateMaxDateByDays(data.data);
+        const requestId = ++vigenciaRequestId;
+        if (!origen || !destino) return;
+        try {
+            const url = `${API.vigencia}?empresa=EC&origen=${encodeURIComponent(origen)}&destino=${encodeURIComponent(destino)}`;
+            const response = await fetch(await ebWithToken(url));
+            if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
+            const result = await response.json();
+            const days = Number(result?.data);
+            if (result?.error || !Number.isFinite(days) || days < 0) {
+                throw new Error(result?.message || "La respuesta de vigencia no contiene un plazo válido.");
+            }
+            if (
+                requestId !== vigenciaRequestId ||
+                origen !== searchState.origin ||
+                destino !== searchState.destination
+            ) return;
+            updateMaxDateByDays(days);
+        } catch (error) {
+            console.error("Error consultando la vigencia de venta:", error);
+        }
     }
 
     function updateMaxDateByDays(days) {
@@ -75,7 +237,7 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
         const maxDate = new Date();
         maxDate.setDate(today.getDate() + days);
         // Formato YYYY-MM-DD
-        const formattedMaxDate = maxDate.toISOString().split("T")[0];
+        const formattedMaxDate = formatDateISO(maxDate);
         calendar.set("maxDate", formattedMaxDate);
     }
 
@@ -118,9 +280,12 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
                 searchState.origin = searchState.destination;
                 searchState.destination = temp;
 
-                kendo.jQuery("#originSelect").data("kendoComboBox").value(searchState.origin);
+                const originWidget = kendo.jQuery("#originSelect").data("kendoComboBox");
+                const destinationWidget = kendo.jQuery("#destinationSelect").data("kendoComboBox");
+                if (!originWidget || !destinationWidget || !searchState.origin) return;
+                originWidget.value(searchState.origin);
                 await loadDestinos(searchState.origin);
-                kendo.jQuery("#destinationSelect").data("kendoComboBox").value(searchState.destination);
+                destinationWidget.value(searchState.destination || "");
                 await getVigencia();
                 validateForm();
             });
@@ -129,7 +294,23 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
             .addEventListener("click", handleSearch);
 
         document.getElementById("fechaViaje")
-            .addEventListener("click", openDateModal);
+            .addEventListener("click", async () => {
+                if (!calendar) {
+                    try {
+                        await loadFlatpickr();
+                        initFecha(searchState.tripType === "oneway" ? "single" : "range");
+                    } catch (error) {
+                        console.error("Error preparando el calendario:", error);
+                        Swal.fire({
+                            icon: "error",
+                            title: "Calendario no disponible",
+                            text: "No fue posible cargar el calendario. Intenta nuevamente."
+                        });
+                        return;
+                    }
+                }
+                openDateModal();
+            });
 
         document.getElementById("closeDateModal")
             .addEventListener("click", closeDateModal);
@@ -140,26 +321,70 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
 
     async function loadDestinos(origen) {
         const idTarget = "destinationSelect";
-        initKendoCombobox(idTarget, async (e) => {
+        initDestinationCombobox(async (e) => {
             searchState.destination = e.sender.value();
             await getVigencia();
             validateForm();
-        })
-        const response = await fetch(API.destinos + encodeURIComponent(origen));
-        const data = await response.json();
-        updateKendoComboboxData(idTarget, data.data);
+        });
+        const widget = kendo.jQuery(`#${idTarget}`).data("kendoComboBox");
+        if (!widget) return;
+        const requestId = ++destinationRequestId;
+        if (!origen) {
+            widget.setDataSource(new kendo.data.DataSource({ data: [] }));
+            widget.value("");
+            widget.input.attr("placeholder", "Selecciona un origen");
+            widget.enable(false);
+            return;
+        }
 
-        if (searchState.destination) {
-            const widget = kendo.jQuery("#destinationSelect").data("kendoComboBox");
-            if (widget) {
-                widget.value(searchState.destination);
-                await getVigencia();
-                validateForm();
+        const selectedDestination = searchState.destination;
+        widget.setDataSource(new kendo.data.DataSource({ data: [] }));
+        widget.value("");
+        widget.input.attr("placeholder", "Cargando destinos...");
+        widget.enable(false);
+
+        try {
+            const url = API.destinos + encodeURIComponent(origen);
+            const response = await fetch(await ebWithToken(url));
+            if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
+            const result = await response.json();
+            if (requestId !== destinationRequestId) return;
+            if (result?.error || !Array.isArray(result?.data)) {
+                throw new Error(result?.message || "La respuesta de destinos no tiene un formato válido.");
             }
+            updateKendoComboboxData(idTarget, result.data);
+            widget.enable(true);
+            const canRestoreDestination = result.data.some(
+                item => String(item.codigo) === String(selectedDestination)
+            );
+            searchState.destination = canRestoreDestination ? selectedDestination : null;
+            widget.value(searchState.destination || "");
+            if (searchState.destination) await getVigencia();
+            validateForm();
+        } catch (error) {
+            if (requestId !== destinationRequestId) return;
+            console.error("Error cargando los destinos:", error);
+            widget.input.attr("placeholder", "No fue posible cargar los destinos");
+            widget.enable(false);
         }
     }
 
-    async function restoreCompraActiva() {
+    function initDestinationCombobox(onChangeCallback) {
+        const idTarget = "destinationSelect";
+        if (kendo.jQuery(`#${idTarget}`).data("kendoComboBox")) return;
+        initKendoCombobox(idTarget, onChangeCallback || (async (e) => {
+            searchState.destination = e.sender.value() || null;
+            await getVigencia();
+            validateForm();
+        }));
+        const widget = kendo.jQuery(`#${idTarget}`).data("kendoComboBox");
+        if (widget) {
+            widget.input.attr("placeholder", "Selecciona un origen");
+            widget.enable(false);
+        }
+    }
+
+    function restoreCompraActiva() {
         if (!compraActiva) return;
 
         selectedDates = [searchState.departureDate].filter(Boolean);
@@ -205,6 +430,7 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
                     Swal.showLoading();
                 }
             });
+            await serviceInitialization;
 
             const payload = {
                 origen: searchState.origin,
@@ -273,8 +499,12 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
             await pouchService.guardarCompra({
                 ...payload,
                 successLoadLines,
-                successLoadLinesReturn
+                successLoadLinesReturn,
+                llaveTransaccion: transaccionData ? transaccionData.llaveTransaccion : null,
+                usuarioVenta: transaccionData && transaccionData.usuario ? transaccionData.usuario : null
             });
+            await ebCrearCompra(payload);
+            await headerInitialization;
             Swal.close();
             G_deleteHeaderPages();
             goLocation('#/page/lineas/ExpresoBrasilia_Lappiz');
@@ -296,7 +526,13 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
             `&origen=${params.origen}&destino=${params.destino}&contingencia=N`;
 
         const lappizFunctionId = "12ff70cf-d04a-41bb-b6ad-e564217339d7";
-        const config = { nameFunction, lappizFunctionId, body: {}, method: "GET" };
+        const ebToken = await ebGetToken();
+        const config = {
+            nameFunction: nameFunction + (ebToken ? "&token=" + encodeURIComponent(ebToken) : ""),
+            lappizFunctionId,
+            body: {},
+            method: "GET"
+        };
         const response = await execLF(config);
         const data = preFilterResponseLineas(response.data);
         return filtrarYOrdenarViajes(data);
@@ -332,33 +568,219 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
         return new Date(`${fecha}T${h}:00`);
     };
 
+    function applyKendoComboStyles() {
+        // Neutralizar reglas en hojas de estilo locales que fuerzan width/left: auto !important en .k-animation-container
+        try {
+            document.querySelectorAll("style").forEach((styleEl) => {
+                if (styleEl.textContent && styleEl.textContent.includes(".k-animation-container")) {
+                    styleEl.textContent = styleEl.textContent.replace(
+                        /\.k-animation-container\s*\{[^}]*\}/g,
+                        ".k-animation-container { border-radius: 12px !important; overflow: hidden !important; }"
+                    );
+                }
+            });
+        } catch (e) { }
+
+        if (document.getElementById("eb-paso1-kendo-styles")) return;
+        const style = document.createElement("style");
+        style.id = "eb-paso1-kendo-styles";
+        style.textContent = `
+            #search-step .input-container {
+                position: relative;
+                width: 100%;
+            }
+            #search-step .k-widget.k-dropdown,
+            #search-step .k-widget.k-combobox {
+                width: 100% !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin-bottom: 1.2rem !important;
+            }
+            #search-step .k-dropdown-wrap,
+            #search-step .k-picker-wrap,
+            #search-step .k-combobox .k-state-default {
+                width: 100% !important;
+                background-color: #f1f3f6 !important;
+                border: none !important;
+                border-radius: 25px !important;
+                height: 48px !important;
+                display: flex !important;
+                align-items: center !important;
+                padding: 0 0.8rem 0 1.2rem !important;
+                box-shadow: none !important;
+                box-sizing: border-box !important;
+            }
+            #search-step .destination-wrapper .k-dropdown-wrap {
+                padding-right: 3.2rem !important;
+            }
+            #search-step #fechaViaje {
+                height: 48px !important;
+                margin: 0 0 1.2rem !important;
+                width: 100% !important;
+                padding: 0 3rem 0 1.2rem !important;
+                background-color: #f1f3f6 !important;
+                border: none !important;
+                border-radius: 25px !important;
+                color: #2d3748 !important;
+                box-shadow: none !important;
+                box-sizing: border-box !important;
+            }
+            #search-step #swapBtn {
+                height: 48px !important;
+                top: 0 !important;
+                right: 0 !important;
+                transform: none !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 0 16px !important;
+                z-index: 2;
+            }
+            #search-step .k-dropdown-wrap.k-state-hover,
+            #search-step .k-dropdown-wrap.k-state-focused {
+                background-color: #e8ecf1 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            #search-step .k-dropdown-wrap.k-state-focused,
+            #search-step .k-picker-wrap.k-state-focused {
+                outline: 2px solid rgba(31, 67, 104, 0.18) !important;
+                outline-offset: 1px;
+            }
+            #search-step .k-dropdown-wrap .k-input,
+            #search-step .k-combobox .k-input {
+                width: 100% !important;
+                height: 100% !important;
+                line-height: 48px !important;
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                font-size: 0.9rem !important;
+                color: #2d3748 !important;
+                box-shadow: none !important;
+            }
+            #search-step .k-select,
+            #search-step .k-combobox .k-state-hover .k-select {
+                background-color: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                width: 30px !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+            }
+            #search-step .k-icon {
+                color: #718096 !important;
+            }
+            .k-animation-container {
+                border-radius: 12px !important;
+                overflow: hidden !important;
+            }
+            .k-list-container.k-popup.k-group.k-reset {
+                width: 100% !important;
+                border: 1px solid #e2e8f0 !important;
+                background-color: #f1f3f6 !important;
+                border-radius: 12px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+                box-sizing: border-box !important;
+            }
+            .k-list-scroller {
+                background: #f1f3f6 !important;
+                width: 100% !important;
+            }
+            .k-list,
+            .k-list-ul {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .k-list .k-item,
+            .k-list .k-list-item {
+                width: 100% !important;
+                box-sizing: border-box !important;
+                padding: 10px 16px !important;
+                font-size: 0.88rem !important;
+                border-radius: 6px !important;
+                color: #2d3748 !important;
+                text-align: left !important;
+                justify-content: flex-start !important;
+            }
+            .k-list .k-item.k-state-hover,
+            .k-list .k-item.k-state-selected,
+            .k-list .k-list-item.k-state-hover,
+            .k-list .k-list-item.k-state-selected {
+                background-color: #1f4368 !important;
+                color: #ffffff !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function syncKendoPopupWidth(widget) {
+        if (!widget || !widget.wrapper || !widget.popup) return;
+        const apply = () => {
+            const wrapperEl = widget.wrapper[0];
+            if (!wrapperEl) return;
+            const containerEl = wrapperEl.closest(".input-container") || wrapperEl;
+            const rect = containerEl.getBoundingClientRect();
+            if (!rect.width) return;
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft || 0;
+            const animContainer = widget.popup.wrapper && widget.popup.wrapper[0];
+            const listContainer = widget.popup.element && widget.popup.element[0];
+            const widthPx = `${Math.round(rect.width)}px`;
+            const leftPx = `${Math.round(rect.left + scrollLeft)}px`;
+
+            if (animContainer) {
+                animContainer.style.setProperty("width", widthPx, "important");
+                animContainer.style.setProperty("min-width", widthPx, "important");
+                animContainer.style.setProperty("max-width", widthPx, "important");
+                animContainer.style.setProperty("left", leftPx, "important");
+            }
+            if (listContainer) {
+                listContainer.style.setProperty("width", "100%", "important");
+                listContainer.style.setProperty("min-width", "100%", "important");
+                listContainer.style.setProperty("box-sizing", "border-box", "important");
+            }
+        };
+        apply();
+        requestAnimationFrame(apply);
+        setTimeout(apply, 0);
+        setTimeout(apply, 50);
+    }
+
     async function setControlKendoCombobox(data, idTarget, onChangeCallback) {
         const element = document.querySelector(`#${idTarget}`);
         if (!element) {
             console.warn("Elemento no encontrado:", idTarget);
-            setTimeout(() => setControlKendoCombobox(data, idTarget), 100);
+            setTimeout(() => setControlKendoCombobox(data, idTarget, onChangeCallback), 100);
             return;
         }
+        applyKendoComboStyles();
+        element.classList.remove("form-control", "form-control-sm");
+        element.classList.add("custom-pill-kendo");
         if (element.kendoComboBox) {
             element.kendoComboBox.destroy();
         }
-        kendo.jQuery(`#${idTarget}`).kendoComboBox({
-            inputMode: "search",
-            adaptiveMode: "auto",
-            size: "small",
-            rounded: "full",
-            fillMode: "none",
+        const widget = kendo.jQuery(`#${idTarget}`).kendoComboBox({
+            placeholder: "----",
+            filter: "contains",
             dataTextField: "descripcion",
             dataValueField: "codigo",
             dataSource: data,
-            filter: "contains",
-            placeholder: "----",
             minLength: 1,
             autoBind: true,
             noDataTemplate: "No hay coincidencias",
             highlightFirst: true,
+            open: (e) => syncKendoPopupWidth(e.sender),
+            dataBound: (e) => syncKendoPopupWidth(e.sender),
             change: onChangeCallback
-        });
+        }).data("kendoComboBox");
+        if (widget && widget.popup) {
+            widget.popup.bind("open", () => syncKendoPopupWidth(widget));
+            widget.popup.bind("activate", () => syncKendoPopupWidth(widget));
+        }
     }
 
     /**
@@ -373,30 +795,36 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
             return;
         }
 
+        applyKendoComboStyles();
+        element.classList.remove("form-control", "form-control-sm");
+        element.classList.add("custom-pill-kendo");
+
         // Si ya existe, lo destruimos para evitar duplicados
-        const widget = kendo.jQuery(`#${idTarget}`).data("kendoComboBox");
-        if (widget) {
-            widget.destroy();
+        const prevWidget = kendo.jQuery(`#${idTarget}`).data("kendoComboBox");
+        if (prevWidget) {
+            prevWidget.destroy();
         }
 
-        // Inicialización con DataSource vacío
-        kendo.jQuery(`#${idTarget}`).kendoComboBox({
-            inputMode: "search",
-            adaptiveMode: "auto",
-            size: "small",
-            rounded: "full",
-            fillMode: "none",
+        // Inicialización replicando estilos de 4 Pasajeros
+        const widget = kendo.jQuery(`#${idTarget}`).kendoComboBox({
+            placeholder: "Cargando datos...",
+            filter: "contains",
             dataTextField: "descripcion",
             dataValueField: "codigo",
-            dataSource: [], // Empezamos vacío
-            filter: "contains",
-            placeholder: "Cargando datos...", // Placeholder temporal
+            dataSource: [],
             minLength: 1,
             autoBind: true,
             noDataTemplate: "No hay coincidencias",
             highlightFirst: true,
+            open: (e) => syncKendoPopupWidth(e.sender),
+            dataBound: (e) => syncKendoPopupWidth(e.sender),
             change: onChangeCallback
-        });
+        }).data("kendoComboBox");
+
+        if (widget && widget.popup) {
+            widget.popup.bind("open", () => syncKendoPopupWidth(widget));
+            widget.popup.bind("activate", () => syncKendoPopupWidth(widget));
+        }
     }
 
     function updateKendoComboboxData(idTarget, data) {
@@ -437,12 +865,10 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
         });
     }
     function loadFlatpickr() {
-        return new Promise((resolve, reject) => {
-            if (window.flatpickr && window.flatpickr.l10ns.es) {
-                resolve();
-                return;
-            }
+        if (window.flatpickr && window.flatpickr.l10ns.es) return Promise.resolve();
+        if (flatpickrLoadPromise) return flatpickrLoadPromise;
 
+        flatpickrLoadPromise = new Promise((resolve, reject) => {
             // 1. Cargar CSS (no bloquea el JS, puede ir solo)
             if (!document.querySelector('link[href*="flatpickr.min.css"]')) {
                 const link = document.createElement("link");
@@ -472,6 +898,11 @@ console.log("PASO 1: Inicio de compra. Seleccion de origen y destino.");
             script.onerror = () => reject("Error cargando flatpickr");
             document.body.appendChild(script);
         });
+        flatpickrLoadPromise = flatpickrLoadPromise.catch((error) => {
+            flatpickrLoadPromise = null;
+            throw error;
+        });
+        return flatpickrLoadPromise;
     }
 
     function openDateModal() {

@@ -1,0 +1,874 @@
+GUÍA DE INTEGRACIÓN – FLUJO DE COMPRA CON PASARELA DE PAGOS
+Kushki (tarjeta y transferencia PSE), Nequi y Addi
+1. Información general
+Esta guía describe el flujo de compra de tiquetes para aliados que utilizan la pasarela de pagos de Expreso Brasilia. El aliado construye la compra, registra pasajeros y comprador, y delega el cobro al módulo de pagos del backend, que enruta hacia la pasarela correspondiente (Kushki, Nequi o Addi).
+Ambiente: QAS
+Host: https://testportalapp.expresobrasilia.com/BrasiliaTiquetesWS
+Colección Postman: Integración Aliados - Pasarelas   Environment: 08-WSTiquetesQAS
+Toda la compra se identifica con una transacción (llaveTransaccion) que se obtiene al inicio y acompaña el resto del proceso, incluido el pago. En Kushki esa misma transacción viaja como cart_id y en Addi como orderId.
+Principio del módulo de pagos: el aliado solo conoce /api/v1/pagos. La pasarela concreta se resuelve en el backend a partir del código del medio de pago, y la respuesta de iniciar indica qué debe hacer el front: redirigir, abrir el modal de Kushki o esperar la confirmación del push.
+2. Autenticación y seguridad
+Iniciar sesión
+POST  {{host}}/auth/login
+Devuelve el token que debe enviarse como Bearer Token en el resto de servicios. También es posible autenticarse mediante Basic Auth.
+Request
+{
+  "username": "EJEMPLO",
+  "password": "1234"
+}
+Response
+{
+  "error": false,
+  "message": null,
+  "data": "TOKEN"
+}
+Endpoints públicos
+Los siguientes endpoints NO requieren token, porque son consumidos por las pasarelas o por el navegador del comprador:
+/auth/**
+/api/v1/kushki/checkout/callback
+/api/v1/kushki/webhook/kushki
+/api/v1/addi/callback
+/api/v1/pagos/*/subscribe
+Todos los demás servicios de compra y de pagos exigen el token obtenido en el login.
+3. Flujo general
+El proceso de compra se puede resumir de la siguiente manera:
+Autenticación
+      |
+Obtener transacción
+      |
+Catálogo, itinerario y puesto  (ver Guía de venta directa sin pasarela, secciones 4 a 14)
+      |
+Crear compra                 (estado IT / proceso IT)
+      |
+Actualizar compra            (proceso PT - puestos)
+      |
+Registrar pasajeros
+      |
+Actualizar compra            (proceso PS - pasajeros)
+      |
+Registrar comprador
+      |
+Consultar medios de pago
+      |
+Actualizar compra            (medioPago, valorCompra, tiquetesBody, proceso PG)
+      |
+[ADDI] Consultar configuración del medio de pago
+      |
+Iniciar pago                 POST /pagos/{codigo}/iniciar
+      |
+Evaluar "accion" de la respuesta
+      |
+      +-- REDIRECT ....... Addi: redirigir el navegador a data.url
+      +-- MODAL_KUSHKI ... Kushki: abrir el KForm en el front
+      +-- PUSH ........... Nequi: push enviado, esperar confirmación
+      +-- DIRECTO ........ medio sin pasarela integrada
+      |
+Confirmación del pago
+  (callback / webhook / polling - siempre en el backend)
+      |
+El backend marca la compra en PG, genera y envía los tiquetes
+Importante: el aliado no genera los tiquetes. La generación y el envío los ejecuta el backend cuando confirma el pago, en cualquiera de las tres pasarelas.
+4. Obtener transacción
+GET  {{host}}/api/v1/tiquetes/obtener-transaccion
+No es necesario enviar el parámetro empresa: el backend usa automáticamente la empresa del usuario autenticado (usuario.empresa en la respuesta). Devuelve la transacción y la información del usuario que realizará la operación.
+Response
+{
+  "error": false,
+  "message": null,
+  "data": {
+    "llaveTransaccion": "PGKM20260811151240",
+    "usuario": {
+      "username": "EJEMPLO",
+      "empresa": "EC",
+      "agencia": "20",
+      "nombreAgencia": "AGENCIA CORPORATIVA",
+      "codUsuario": "8901005311"
+    },
+    "stVariablesDTO": {
+      "codClase": "PV",
+      "cantidadCupos": 20,
+      "tarifaMinimaBaja": 5000.0,
+      "tarifaMinimaAlta": 5000.0
+    }
+  }
+}
+La llaveTransaccion obtenida se utiliza durante toda la compra y es la misma que se envía al módulo de pagos.
+Importante: antes de Crear compra, el aliado debe completar los pasos de catálogo, itinerario y datos del pasajero descritos en la guía "GUÍA DE INTEGRACIÓN – API DE VENTA DE TIQUETES" (secciones 4 a 14: orígenes, destinos, vigencia de venta, líneas, puestos, marcar puesto, países, tipos de identificación, tipo de pasajero). Esos endpoints son los mismos para ambos flujos y no se repiten en esta guía; de ahí sale la línea, el puesto y la tarifa que se usan para construir tiquetesBody (sección 11).
+5. Crear compra
+POST  {{host}}/api/v1/compras/create
+Requiere la información obtenida en obtener-transaccion y la del trayecto seleccionado.
+Request
+{
+  "transaccion": "PGKM20260811151240",
+  "fechaTransaccion": "2026-08-11 15:14:49.160",
+  "origen": "CTG",
+  "destino": "BAQ",
+  "fechaIda": "2026-08-12",
+  "fechaVuelta": null,
+  "idaYVuelta": "N",
+  "estado": "IT",
+  "estadoProceso": "IT",
+  "empresa": "EC"
+}
+La compra se crea con estado = IT y estadoProceso = IT.
+6. Actualizar compra
+PATCH  {{host}}/api/v1/compras/update/{transaccion}
+La información de la compra se completa conforme avanza el proceso. Este mismo endpoint se usa en cada etapa.
+Ejemplo - etapa de puestos
+{
+  "estado": "PP",
+  "estadoProceso": "PT",
+  "valorCompra": 21900
+}
+Ejemplo - etapa de pasajeros
+{
+  "estado": "PP",
+  "estadoProceso": "PS",
+  "valorCompra": 21900
+}
+7. Registrar pasajero
+POST  {{host}}/api/v1/compras/pasajero/create
+Se registra un pasajero por llamada, asociado a la transacción mediante el campo transaccion e identificado dentro de la compra por indice.
+Request
+{
+  "numeroIdentificacion": "1000000000",
+  "pais": "169",
+  "tipoIdentificacion": "CC",
+  "primerNombre": "NOMBRE",
+  "segundoNombre": "",
+  "primerApellido": "APELLIDO",
+  "segundoApellido": "",
+  "fechaNacimiento": "1996-05-13",
+  "sexo": "M",
+  "codigoPais": {
+    "codigo": "169",
+    "descripcion": "COLOMBIA",
+    "prefijo": null,
+    "bandera": null
+  },
+  "celular": "3000000000",
+  "email": "correo@ejemplo.com",
+  "lector": "N",
+  "id": {
+    "empresa": "EC",
+    "numeroIdentificacion": "1000000000"
+  },
+  "nombreCompleto": "NOMBRE APELLIDO",
+  "tipoPasajero": "A",
+  "descripcionTipoPasajero": "ADULTO",
+  "transaccion": "PGKM20260811151240",
+  "indice": 1
+}
+8. Registrar comprador
+POST  {{host}}/api/v1/compras/comprador/create
+Registra los datos de quien paga. Es la misma estructura del pasajero, sin indice ni tipoPasajero.
+Obligatorio para Addi: el comprador debe estar registrado antes de iniciar el pago con ADDI. Si la compra no tiene comprador, POST /pagos/ADDI/iniciar responde con error "La compra no tiene datos del comprador registrados". Addi usa nombre, documento, correo, celular y dirección del comprador para crear la solicitud de financiación.
+Request
+{
+  "id": {
+    "empresa": "EC",
+    "numeroIdentificacion": "1000000000"
+  },
+  "numeroIdentificacion": "1000000000",
+  "tipoIdentificacion": "CC",
+  "primerNombre": "NOMBRE",
+  "segundoNombre": "",
+  "primerApellido": "APELLIDO",
+  "segundoApellido": "",
+  "nombreCompleto": "NOMBRE APELLIDO",
+  "pais": "169",
+  "descripcionPais": "Colombia",
+  "email": "correo@ejemplo.com",
+  "celular": "3000000000",
+  "sexo": "M",
+  "fechaNacimiento": null,
+  "lector": "N",
+  "transaccion": "PGKM20260811151240"
+}
+9. Consultar medios de pago
+GET  {{host}}/api/v1/pagos/medios-pago
+Devuelve los medios de pago habilitados. El aliado usa este listado para pintar las opciones al comprador.
+Response
+{
+  "error": false,
+  "message": "Consulta de medios de pago exitosa",
+  "data": [
+    {
+      "id": 1,
+      "codigo": "TARJETA",
+      "nombre": "PAGO CON TARJETAS",
+      "icono": "check_circle",
+      "imagen": "assets/img/pago/card.png",
+      "nuevo": "N"
+    },
+    {
+      "id": 2,
+      "codigo": "NEQUI",
+      "nombre": "PAGOS CON NEQUI",
+      "icono": "phone_iphone",
+      "imagen": "assets/img/pago/nequi.jpg",
+      "nuevo": "N"
+    },
+    {
+      "id": 3,
+      "codigo": "TRANSFERENCIA",
+      "nombre": "PAGOS POR TRANSFERENCIAS KUSHKI PSE",
+      "icono": "account_balance",
+      "imagen": "assets/img/pago/pse.png",
+      "nuevo": "N"
+    },
+    {
+      "id": 4,
+      "codigo": "ADDI",
+      "nombre": "PAGOS CON ADDI",
+      "icono": "calendar_month",
+      "imagen": "assets/img/pago/addi.jpg",
+      "nuevo": "N"
+    }
+  ]
+}
+Códigos y pasarela que los atiende
+codigo	Pasarela	Acción que devuelve iniciar
+TARJETA	Kushki (tarjeta de crédito/débito)	MODAL_KUSHKI
+TRANSFERENCIA	Kushki (transferencia PSE)	MODAL_KUSHKI
+NEQUI	Nequi (push de cobro al celular)	PUSH
+ADDI	Addi (compra ahora, paga después)	REDIRECT
+
+Uso de id vs codigo: en PATCH /compras/update/{transaccion} el campo medioPago es el id numérico de este listado (1, 2, 3, 4). En los servicios de /api/v1/pagos se usa el codigo en texto (TARJETA, NEQUI, ...). Es el error de integración más frecuente.
+Nota: el listado no expone ningún indicador de redirección. El comportamiento del front lo determina el campo accion que devuelve el servicio de inicio de pago (sección 12).
+10. Actualizar compra con la información de pago
+PATCH  {{host}}/api/v1/compras/update/{transaccion}
+Antes de iniciar el pago, la compra debe quedar con el valor total, el medio de pago seleccionado y el cuerpo de los tiquetes. El backend toma de aquí el valor real que cobra a la pasarela.
+Request
+{
+  "tiquetesBody": "{\"tiquetes\":[...]}",
+  "estado": "PP",
+  "estadoProceso": "PG",
+  "valorCompra": 21900,
+  "medioPago": 1
+}
+Por qué es obligatorio antes de pagar
+•	valorCompra: el valor NO se envía desde el front al iniciar el pago. El backend siempre cobra ST_COMPRA.VALOR, por seguridad.
+•	medioPago: con este id el backend resuelve la pasarela al consultar el estado del pago. Si la compra no lo tiene, la consulta de estado no puede verificar contra el proveedor.
+•	tiquetesBody: es la información con la que se generan los tiquetes al aprobarse el pago. En Addi además se usa para armar el detalle de items de la solicitud.
+11. Estructura de tiquetesBody
+El campo tiquetesBody contiene la información de los tiquetes como un objeto serializado en texto.
+{
+  "tiquetes": [
+    {
+      "pasajero": {
+        "empresa": "EC",
+        "numeroIdentificacion": "1000000000",
+        "tipoIdentificacion": "CC",
+        "primerNombre": "NOMBRE",
+        "segundoNombre": "",
+        "primerApellido": "APELLIDO",
+        "segundoApellido": "",
+        "nombreCompleto": "NOMBRE APELLIDO",
+        "pais": "169",
+        "email": "correo@ejemplo.com",
+        "celular": "3000000000",
+        "fechaNacimiento": "1996-05-13",
+        "sexo": "M",
+        "lector": "N",
+        "tipoPasajero": "A",
+        "descripcionTipoPasajero": "ADULTO"
+      },
+      "ida": {
+        "tipoLinea": "LS",
+        "tiquetes": [
+          {
+            "vlrPago1": 19000,
+            "codClase1": "PV",
+            "puesto": 1,
+            "fechaVenta": "2026-08-11 15:25:52.061",
+            "ageAbordaje": "12",
+            "valorPagado": 19000,
+            "tarifaEspecial": false,
+            "valorEstampilla": 0,
+            "terminalDatafono": "",
+            "llaveTransaccionDatafono": "",
+            "fuente": "TIQ",
+            "tipoVenta": "TNO",
+            "ageVenta": "20",
+            "codDestino": "BAQ",
+            "empresa": "UN",
+            "empresaUsuario": "UN",
+            "fechaReal": "2026-08-12",
+            "fechaSalida": "2026-08-12",
+            "fechaViaje": "2026-08-12",
+            "hora": "0545",
+            "horaReal": "0545",
+            "ruta": "1231",
+            "rutaReal": "1231",
+            "consecutivo": 1,
+            "usuario": "WSPWEB",
+            "valorLista": 38000,
+            "tipoServicio": "48",
+            "ageTarifaEspecial": "",
+            "codigoFormato": "",
+            "valorDescuento": 0,
+            "codClaseEstampilla": "",
+            "codigoConvenio": "",
+            "ideSolicitante": "",
+            "numeroBus": null,
+            "placa": null,
+            "tiqueteDigital": false,
+            "tipoImpresion": "termico",
+            "llaveTransaccion": "PGKM20260811151240"
+          }
+        ]
+      },
+      "vuelta": {
+        "tipoLinea": "",
+        "tiquetes": []
+      },
+      "titularPago": {
+        "numeroIdentificacion": "1000000000",
+        "nombre": "NOMBRE APELLIDO"
+      }
+    }
+  ],
+  "valorSeguro": 2900,
+  "tipoFacturacion": "UT",
+  "titularFEV": {
+    "tipoIdentificacion": "CC",
+    "numeroIdentificacion": "1000000000",
+    "primerNombre": "NOMBRE",
+    "segundoNombre": "",
+    "primerApellido": "APELLIDO",
+    "segundoApellido": "",
+    "nombreCompleto": "NOMBRE APELLIDO",
+    "email": "correo@ejemplo.com",
+    "empresa": "EC",
+    "celular": "3000000000"
+  }
+}
+Origen de los campos
+El backend no valida estos valores contra las respuestas de los pasos anteriores: los recibe tal como los envía el aliado y los usa directamente para generar el tiquete al confirmarse el pago. Enviar valores distintos a los devueltos por esos servicios puede producir un tiquete grabado con datos incorrectos.
+Campo	Origen
+ageAbordaje	Campo agencia de la respuesta de Obtener orígenes (Guía de venta directa sin pasarela, sección 4), correspondiente al origen del trayecto seleccionado.
+ageVenta	Campo usuario.agencia de la respuesta de Obtener transacción (sección 4 de esta guía).
+consecutivo	Campo consecutivo de la línea seleccionada, devuelto por Obtener líneas (Guía de venta directa sin pasarela, sección 7).
+ruta / hora / fechaSalida / rutaReal / horaReal / fechaReal	Mismos valores ruta, hora y fechaSalida de la línea seleccionada (Guía de venta directa sin pasarela, sección 7).
+codDestino	Código del destino seleccionado (Guía de venta directa sin pasarela, secciones 4-5).
+vlrPago1 / valorLista	Campo tarifa.valorTarifa de la línea seleccionada (Guía de venta directa sin pasarela, sección 7).
+valorEstampilla	Campo tarifa.valorEstampilla de la línea seleccionada (Guía de venta directa sin pasarela, sección 7).
+valorPagado	Calculado por el aliado: valorTarifa + valorEstampilla cuando la línea aplica estampilla.
+tipoServicio	Campo infoServicio.codigo de la línea seleccionada (Guía de venta directa sin pasarela, sección 7).
+empresaUsuario	Campo usuario.empresa de la respuesta de Obtener transacción (sección 4 de esta guía).
+llaveTransaccion (dentro del tiquete)	llaveTransaccion devuelta por Obtener transacción (sección 4 de esta guía).
+puesto	Campo numero del puesto marcado (Guía de venta directa sin pasarela, sección 9).
+tipoLinea	Campo tipoLinea de la línea seleccionada (Guía de venta directa sin pasarela, sección 7).
+12. Módulo de pagos - contrato unificado
+El módulo de pagos expone un contrato único para las tres pasarelas. El aliado nunca llama directamente a Kushki, Nequi o Addi: siempre llama a /api/v1/pagos y el backend enruta.
+GET   /api/v1/pagos/medios-pago
+GET   /api/v1/pagos/{codigo}/config?requestedAmount={valor}
+POST  /api/v1/pagos/{codigo}/iniciar
+GET   /api/v1/pagos/{transaccion}/estado?referencia={referencia}
+GET   /api/v1/pagos/{transaccion}/subscribe        (SSE)
+Importante: no existen endpoints de "intentos" (/pagos/{transaccion}/intentos). Esa versión del contrato fue reemplazada por el contrato simplificado descrito en esta sección.
+12.1 Consultar configuración del medio de pago
+GET  {{host}}/api/v1/pagos/{codigo}/config?requestedAmount={valor}
+Ejemplo: /api/v1/pagos/ADDI/config?requestedAmount=21900
+Actualmente solo ADDI implementa configuración. Para TARJETA, TRANSFERENCIA y NEQUI el servicio responde error: true con el mensaje "El medio de pago no soporta configuración"; no es una falla, simplemente no aplica.
+El parámetro requestedAmount es obligatorio y corresponde al valor de la compra.
+Response
+{
+  "error": false,
+  "message": "Configuración consultada",
+  "data": {
+    "minAmount": 150000.0,
+    "maxAmount": 3000000.0,
+    "activeAlly": true,
+    "visible": true,
+    "activePayNow": false
+  }
+}
+Campo	Descripción
+minAmount	Monto mínimo financiable por Addi.
+maxAmount	Monto máximo financiable por Addi.
+activeAlly	Indica si el aliado está activo en Addi.
+visible	Indica si la opción debe mostrarse al comprador.
+activePayNow	Indica si está habilitado el pago inmediato de Addi.
+
+Se recomienda consultarlo antes de ofrecer ADDI: si el valor de la compra queda fuera del rango o visible es false, la opción no debería mostrarse.
+12.2 Iniciar pago
+POST  {{host}}/api/v1/pagos/{codigo}/iniciar
+Ejemplos: /api/v1/pagos/TARJETA/iniciar, /api/v1/pagos/NEQUI/iniciar, /api/v1/pagos/ADDI/iniciar.
+Request
+{
+  "transaccion": "PGKM20260811151240",
+  "telefono": "3000000000",
+  "redirectUrl": "https://mi-frontend.com/confirmacion/"
+}
+Campo	Obligatorio	Descripción
+transaccion	Sí	llaveTransaccion de la compra. En Kushki viaja como cart_id y en Addi como orderId.
+telefono	Solo NEQUI	Celular al que se envía el push de cobro. Si falta, Nequi responde "Teléfono no recibido".
+redirectUrl	Opcional (recomendado)	URL PROPIA del que integra (su pantalla de confirmación), a la que el backend debe devolver al comprador tras el pago. Debe terminar en "/": el backend le concatena la transacción. Si se omite, se usa un default de servidor pensado solo como respaldo. Ver sección 12.6.
+
+El valor NO se envía. El backend toma el valor de la compra (ST_COMPRA.VALOR) para cobrar a la pasarela.
+Response
+{
+  "error": false,
+  "message": "Solicitud ADDI creada correctamente",
+  "data": {
+    "accion": "REDIRECT",
+    "url": "https://<url-generada-por-addi>",
+    "referencia": null,
+    "mensaje": "Solicitud ADDI creada correctamente"
+  }
+}
+12.3 Campo accion: qué debe hacer el front
+El campo data.accion es el que gobierna el flujo del front. Reemplaza cualquier indicador previo de redirección.
+accion	Medio	Qué debe hacer el front
+REDIRECT	ADDI	Redirigir el navegador a data.url (la página de Addi). Al terminar, es Addi quien devuelve el navegador directo a la redirectUrl enviada en iniciar (ver 12.6) + la transacción.
+MODAL_KUSHKI	TARJETA / TRANSFERENCIA	Abrir el formulario (KForm) de Kushki con el medio seleccionado. data.url y data.referencia vienen en null.
+PUSH	NEQUI	Mostrar "revisa tu app Nequi" y esperar la confirmación. data.referencia trae el transactionId de Nequi, necesario para consultar el estado.
+DIRECTO	Medio sin pasarela integrada	Continuar el flujo propio del aliado. El backend responde error=false con el mensaje "Medio de pago sin integración".
+
+Errores posibles
+{ "error": true, "message": "Transacción no recibida" }
+{ "error": true, "message": "Compra no encontrada" }
+{ "error": true, "message": "Error iniciando pago: <detalle de la pasarela>" }
+12.4 Consultar estado del pago
+GET  {{host}}/api/v1/pagos/{transaccion}/estado?referencia={referencia}
+Ejemplo: /api/v1/pagos/PGKM20260811151240/estado?referencia=1101929292
+Comportamiento del servicio:
+•	Deriva el estado del pago a partir de la compra (ST_COMPRA.ESTADO).
+•	Si el estado aún no es terminal y el medio tiene pasarela con consulta activa (Nequi), consulta al proveedor.
+•	Si el proveedor devuelve un estado terminal, el backend lo procesa: marca la compra, genera y envía los tiquetes, y devuelve el estado ya actualizado.
+El parámetro referencia es el que devolvió iniciar en data.referencia (Nequi). Sin él, la consulta a Nequi no puede hacerse y solo se devuelve el estado derivado de la compra.
+Response
+{
+  "error": false,
+  "message": "Consulta exitosa",
+  "data": {
+    "transaccion": "PGKM20260811151240",
+    "estado": "FAILED",
+    "medioPago": "NEQUI",
+    "codigoRespuesta": "71",
+    "mensajeRespuesta": "Transacción rechazada por el usuario"
+  }
+}
+estado	Significado	Acción del front
+SUCCESS	Pago aprobado. Tiquetes generados y enviados por el backend.	Mostrar confirmación de compra.
+PENDING	Pago en curso, aún sin respuesta definitiva del proveedor.	Seguir esperando (SSE o reconsulta).
+FAILED	Pago rechazado o fallido.	Mostrar el rechazo (usando codigoRespuesta/mensajeRespuesta) y permitir reintentar con otro medio.
+
+codigoRespuesta y mensajeRespuesta traen el detalle real del último pago registrado (el código/mensaje del proveedor, o el mensaje interno de Addi/Kushki). El frontend los usa para explicarle al comprador qué pasó, en vez de que el backend le arme un mensaje o una URL con esa información: esa es responsabilidad del frontend.
+12.5 Confirmación en tiempo real de NEQUI: SSE, no WebSocket
+Importante: este canal es Server-Sent Events (SSE), NO un WebSocket. Es una diferencia real: SSE es una respuesta HTTP normal que el servidor mantiene abierta y por la que va empujando líneas de texto — no hay handshake especial, no hace falta ninguna librería de WebSocket (ws, socket.io, etc.), y la conexión es unidireccional (solo el backend le habla al cliente, nunca al revés). Cualquier cliente HTTP que sepa leer una respuesta en streaming puede consumirlo — en el navegador, el propio EventSource nativo; desde un backend/servidor, cualquier librería HTTP que no cierre la conexión al primer byte (ver ejemplo con curl más abajo).
+GET  {{host}}/api/v1/pagos/{transaccion}/subscribe
+Es el mecanismo recomendado para NEQUI (el único medio sin webhook: se confirma por consulta activa del backend, y este canal evita que el aliado tenga que hacer polling él mismo).
+•	No requiere token (endpoint público).
+•	Cabecera de request: Accept: text/event-stream
+•	Timeout: 5 minutos. Si expira sin llegar a un estado terminal, hay que reconsultar GET /estado o volver a suscribirse.
+•	Una sola suscripción activa por transacción: al registrar una nueva se cierra la anterior.
+•	Mientras hay un suscriptor activo, el backend verifica NEQUI cada 30 segundos; sin suscriptor, cada 5 minutos (más lento, pero sigue funcionando).
+Evento recibido
+Formato SSE estándar: cada evento son dos líneas de texto plano, "event:" y "data:", separadas por una línea en blanco del siguiente evento.
+event: estado
+data: {"transaccion":"PGKM20260811151240","estado":"SUCCESS","medioPago":"NEQUI","codigoRespuesta":null,"mensajeRespuesta":null}
+El evento SSE solo trae estado (SUCCESS/FAILED/PENDING) — codigoRespuesta y mensajeRespuesta siempre llegan en null por esta vía. Para el detalle real de un rechazo, al recibir SUCCESS o FAILED por SSE hay que consultar GET /pagos/{transaccion}/estado una vez (sección 12.4), que sí lo trae.
+Ejemplo de consumo con curl (fuera del navegador)
+curl -N -H "Accept: text/event-stream" \
+  "{{host}}/api/v1/pagos/PGKM20260811151240/subscribe"
+ 
+# La conexión queda abierta imprimiendo líneas a medida que llegan.
+# -N desactiva el buffering de curl para verlas en tiempo real.
+Si el stack del aliado no maneja bien conexiones HTTP de larga duración (algunos entornos serverless las cortan), la alternativa siempre disponible es no suscribirse y simplemente hacer polling a GET /pagos/{transaccion}/estado cada pocos segundos hasta un estado terminal — el SSE es una optimización, no un requisito.
+12.6 Redirección multi-frontend: cada integrador manda su propia URL
+El backend hoy atiende la página web y, próximamente, la app de venta móvil y otros aliados. Cada uno necesita volver a SU PROPIA pantalla de confirmación tras pagar con Kushki o Addi. Esa URL la conoce y decide quien integra (la página web, la app, el aliado) — el backend no mantiene un catálogo de "canales" ni decide por nadie: solo la recibe, la guarda y la usa quien tiene que usarla.
+•	redirectUrl se envía en iniciar (sección 12.2): es la pantalla de confirmación propia de quien integra.
+•	No hay que registrar nada con nosotros para integrar un nuevo consumidor (app móvil, un aliado nuevo, HCM): cada uno simplemente manda su propia redirectUrl.
+•	Si no se envía, se usa un valor default configurado en el servidor (pensado solo como respaldo para integraciones que aún no la envían, no como mecanismo principal).
+Por qué se guarda en el backend
+Addi no lo necesita: se le pasa la redirectUrl directo al crear la solicitud, y es Addi quien redirige ahí al terminar (sección 15.2). Kushki sí lo necesita, porque su callback SIEMPRE llega a nuestro backend sin ningún otro dato más que la transacción — no hay forma de que Kushki "recuerde" la redirectUrl por nosotros. Por eso, al iniciar el pago, el backend guarda la redirectUrl en ST_COMPRA_PAGO (columna URL_REDIRECCION) antes de llamar a la pasarela, y la usa cuando construye la redirección de vuelta.
+Navegador                Pasarela                    Backend
+   |                              |                           |
+   | iniciar {redirectUrl: "..."} |                           |
+   |------------------------------------------------------------->|
+   |                              |   guarda redirectUrl en    |
+   |                              |   ST_COMPRA_PAGO           |
+   |                              |                           |
+   | ... paga en Kushki ...       |                           |
+   |----------------------------->|                           |
+   |                              | callback (solo trae        |
+   |                              | la transacción)            |
+   |                              |-------------------------->|
+   |                              |    recupera la redirectUrl |
+   |                              |    guardada para esta      |
+   |                              |    transacción              |
+   |<--------------------------------------------------------- |
+   |  redirigido a {redirectUrl}{transaccion}                  |
+Importante: la redirección nunca lleva parámetros de estado (?status=...). El frontend, al llegar a su propia pantalla de confirmación, siempre consulta GET /pagos/{transaccion}/estado (sección 12.4) para saber qué pasó — esa es su responsabilidad, no la del backend.
+13. Kushki - TARJETA y TRANSFERENCIA
+Kushki atiende dos códigos de medio de pago: TARJETA (crédito/débito) y TRANSFERENCIA (PSE). En ambos casos el cobro se completa en el formulario de Kushki (KForm) que abre el front, no en una redirección generada por el backend.
+13.1 Flujo
+POST /pagos/TARJETA/iniciar   (o /pagos/TRANSFERENCIA/iniciar)
+      |
+      v
+{ "accion": "MODAL_KUSHKI", "url": null, "referencia": null }
+      |
+      v
+El front abre el KForm de Kushki con el medio seleccionado
+      |
+      v
+Kushki envía el resultado a:
+   POST /api/v1/kushki/checkout/callback     (tarjeta y transferencia)
+   GET  /api/v1/kushki/checkout/callback     (retorno del banco en PSE)
+   POST /api/v1/kushki/webhook/kushki        (webhook asíncrono)
+      |
+      v
+El backend procesa el evento, marca la compra y genera los tiquetes
+      |
+      v
+El navegador es redirigido, SIN parámetros de estado, a:
+   {redirectUrl}{transaccion}
+La transacción de la compra viaja hacia Kushki como cart_id. Es la llave con la que el backend recupera la compra al recibir el callback o el webhook.
+redirectUrl es la que se envió en iniciar (sección 12.2), no un valor único para todos: ver 12.6 Redirección multi-frontend. El frontend siempre consulta GET /pagos/{transaccion}/estado al llegar para saber si fue SUCCESS, FAILED o PENDING.
+13.2 Respuesta de iniciar
+{
+  "error": false,
+  "message": "Abrir modal Kushki",
+  "data": {
+    "accion": "MODAL_KUSHKI",
+    "url": null,
+    "referencia": null,
+    "mensaje": "Abrir modal Kushki"
+  }
+}
+Kushki no devuelve URL ni referencia: el front debe tener configurado el KForm con el merchant id público y la URL de callback /api/v1/kushki/checkout/callback.
+13.3 Callback del checkout (tarjeta y transferencia)
+POST  {{host}}/api/v1/kushki/checkout/callback
+Lo invoca Kushki, no el aliado. Recibe los campos del formulario y responde una página HTML con redirección automática al front de confirmación.
+Campos recibidos
+Campo	Descripción
+cart_id	Transacción de la compra.
+kushkiToken	Token generado por el KForm.
+kushkiPaymentMethod	card o transfer.
+kushkiDeferred	Número de cuotas diferidas (tarjeta).
+kushkiDeferredType	Tipo de diferido.
+transactionId	Identificador de la transacción en Kushki.
+status	Estado reportado por Kushki.
+
+Resultado
+•	TARJETA: el backend cobra contra Kushki; si obtiene ticketNumber el pago es SUCCESS, en caso contrario FAILED. En ambos casos redirige a {redirectUrl}{transaccion}, sin parámetros de estado.
+•	TRANSFERENCIA: el backend obtiene de Kushki la URL del banco y redirige al comprador allí. Al terminar, el banco regresa a GET /api/v1/kushki/checkout/callback?token=....
+13.4 Retorno del banco (PSE)
+GET  {{host}}/api/v1/kushki/checkout/callback?token={bankToken}
+El backend consulta el estado de la transferencia con ese token y recupera el cart_id desde la metadata de Kushki. Con el cart_id recupera la redirectUrl guardada para esa transacción (la que se envió en iniciar).
+Estado Kushki	Resultado	Redirección
+approvedTransaction	SUCCESS	{redirectUrl}{transaccion}
+declinedTransaction	FAILED	{redirectUrl}{transaccion}
+Cualquier otro	Sin procesar (intermedio)	{redirectUrl}{transaccion}
+
+La redirección es siempre la misma URL, sin importar el resultado: el frontend, al llegar, consulta GET /pagos/{transaccion}/estado para saber si fue SUCCESS, FAILED o si sigue PENDING (el webhook de Kushki lo confirmará más adelante).
+13.5 Webhook
+POST  {{host}}/api/v1/kushki/webhook/kushki
+Confirmación asíncrona de Kushki. Es el respaldo cuando el comprador cierra el navegador antes de volver al front.
+Request
+{
+  "transactionId": "...",
+  "status": "APPROVED",
+  "paymentMethod": "card",
+  "metadata": {
+    "cart_id": "PGKM20260811151240"
+  }
+}
+•	metadata.cart_id es obligatorio: sin él el webhook se ignora.
+•	status = APPROVED se procesa como pago aprobado; DECLINED como rechazado; cualquier otro valor se ignora.
+•	paymentMethod: transfer se mapea a TRANSFERENCIA y card (o ausente) a TARJETA.
+•	Firma: cabecera X-Kushki-Signature (HMAC SHA-256). La validación se aplica solo si está configurada la propiedad kushki.webhook-secret; si no está configurada, se omite.
+Las URLs de callback y webhook están registradas en el dashboard de Kushki y en la configuración del KForm: no deben cambiarse sin coordinar con Kushki.
+14. Nequi - NEQUI
+Nequi envía un push de cobro al celular del comprador. No tiene webhook: la confirmación se obtiene por consulta activa desde el backend.
+14.1 Flujo
+POST /pagos/NEQUI/iniciar   { "transaccion": "...", "telefono": "3000000000" }
+      |
+      v
+{ "accion": "PUSH", "referencia": "<transactionId Nequi>" }
+      |
+      v
+El comprador aprueba el cobro en su app Nequi
+      |
+      v
+Confirmación (dos caminos, no excluyentes):
+   a) SSE   -> GET /pagos/{transaccion}/subscribe   (recomendado, ver 12.5)
+   b) Polling del aliado -> GET /pagos/{transaccion}/estado?referencia={referencia}
+      |
+      v
+Al aprobarse, el backend marca la compra, genera y envía los tiquetes
+El canal de la opción (a) es SSE (Server-Sent Events), no un WebSocket — ver el detalle técnico y un ejemplo de consumo fuera del navegador en la sección 12.5.
+14.2 Respuesta de iniciar
+{
+  "error": false,
+  "message": "Push Nequi enviado",
+  "data": {
+    "accion": "PUSH",
+    "url": null,
+    "referencia": "1101929292",
+    "mensaje": "Push Nequi enviado"
+  }
+}
+Guardar data.referencia: es el identificador de la transacción en Nequi y debe enviarse en la consulta de estado.
+El campo telefono es obligatorio. Si no llega, el servicio responde error: true con "Error iniciando pago: Teléfono no recibido".
+14.3 Confirmación del pago
+El backend ejecuta un proceso de verificación automática de los pagos Nequi pendientes, con dos frecuencias:
+Escenario	Frecuencia de verificación
+Con suscripción SSE activa para la transacción	Cada 30 segundos
+Sin suscripción SSE	Cada 5 minutos
+
+Cuando la verificación arroja un estado terminal, el backend procesa el pago y, si hay suscriptor SSE, notifica el evento "estado" al front. Por eso la suscripción SSE es el mecanismo recomendado: el comprador ve la confirmación en segundos.
+14.4 Códigos de respuesta de Nequi
+Código	Estado normalizado	Significado
+35	SUCCESS	Pago aprobado por el comprador.
+33	PENDING	Push enviado, pendiente de aprobación.
+71	FAILED	Pago rechazado.
+10-455	FAILED	Pago rechazado.
+10-454	FAILED	Pago rechazado.
+Otro	PENDING	Se mantiene en espera hasta la siguiente verificación.
+
+Si la consulta al proveedor falla o la compra no tiene referencia, el estado se mantiene en PENDING y se reintenta en el siguiente ciclo.
+15. Addi - ADDI
+Addi financia la compra (compra ahora, paga después). El backend crea la solicitud, Addi devuelve una URL y el comprador completa el proceso fuera del sitio del aliado.
+15.1 Requisitos previos
+•	El comprador debe estar registrado (POST /compras/comprador/create). Addi usa su nombre, documento, correo, celular y dirección.
+•	La compra debe tener valorCompra y tiquetesBody: de ahí se arman los items de la solicitud (un item por tiquete). Si no hay tiquetes, se envía un item único por el total de la compra.
+•	Se recomienda validar antes la elegibilidad con GET /pagos/ADDI/config?requestedAmount={valorCompra}.
+15.2 Flujo
+GET  /pagos/ADDI/config?requestedAmount=21900     (validar rango y visibilidad)
+      |
+      v
+POST /pagos/ADDI/iniciar
+   { "transaccion": "...", "redirectUrl": "https://mi-frontend.com/confirmacion/" }
+      |
+      v
+{ "accion": "REDIRECT", "url": "https://<url-generada-por-addi>" }
+      |
+      v
+El front redirige el navegador a data.url (la página de Addi)
+      |
+      v
+El comprador completa el proceso en Addi
+      |
+      v
+Addi notifica al backend (servidor a servidor):  POST /api/v1/addi/callback
+      |
+      v
+El backend procesa el evento, marca la compra y genera los tiquetes
+      |
+      v (en paralelo, sin depender del callback)
+Addi devuelve el NAVEGADOR directo a:  {redirectUrl}{transaccion}
+      |
+      v
+El frontend consulta GET /pagos/{transaccion}/estado para saber qué pasó
+La transacción de la compra viaja hacia Addi como orderId. La redirectUrl enviada en iniciar se le pasa directo a Addi (campo allyUrlRedirection.redirectionUrl): es Addi quien redirige el navegador ahí al terminar, sin pasar por nuestro backend. Si no se envía, se usa el default de servidor (addi.redirection-url).
+Importante: el webhook servidor-a-servidor (/api/v1/addi/callback) y la redirección del navegador son dos cosas totalmente independientes, que puede procesar Addi en cualquier orden. Por eso el frontend nunca debe asumir el resultado por haber llegado a la redirectUrl: siempre debe consultar /pagos/{transaccion}/estado.
+15.3 Respuesta de iniciar
+{
+  "error": false,
+  "message": "Solicitud ADDI creada correctamente",
+  "data": {
+    "accion": "REDIRECT",
+    "url": "https://<url-generada-por-addi>",
+    "referencia": null,
+    "mensaje": "Solicitud ADDI creada correctamente"
+  }
+}
+Errores posibles
+{ "error": true, "message": "Error iniciando pago: La compra no tiene datos del comprador registrados" }
+{ "error": true, "message": "Error iniciando pago: Número de identificación del comprador nulo" }
+{ "error": true, "message": "Error iniciando pago: Error creando solicitud ADDI" }
+15.4 Callback de Addi
+POST  {{host}}/api/v1/addi/callback
+Lo invoca Addi, no el aliado. Es un endpoint público registrado en la configuración addi.callback-url del portal del aliado y no debe cambiarse.
+Request
+{
+  "orderId": "PGKM20260811151240",
+  "applicationId": "...",
+  "approvedAmount": "21900.00",
+  "currency": "COP",
+  "status": "APPROVED",
+  "statusTimestamp": "2026-08-11T15:30:00Z"
+}
+status	Estado normalizado	Efecto
+APPROVED	SUCCESS	Compra en PG, tiquetes generados y enviados.
+REJECTED / DECLINED / ABANDONED	FAILED	Compra en RZ.
+Cualquier otro	Se ignora	Se registra en auditoría como status desconocido.
+
+El callback siempre responde HTTP 200 con el mismo cuerpo recibido, incluso ante errores internos, para no provocar reintentos innecesarios de Addi. El resultado real debe consultarse con GET /pagos/{transaccion}/estado.
+16. Generación y envío de tiquetes
+En las tres pasarelas la generación de tiquetes la ejecuta el backend, nunca el aliado. Cuando llega un resultado terminal (callback de Kushki, webhook de Kushki, callback de Addi o verificación de Nequi), el procesador central de eventos ejecuta:
+Pago aprobado (SUCCESS)
+   1. Registra el pago aprobado
+   2. Actualiza la compra a ESTADO = PG
+   3. Genera los tiquetes
+   4. Actualiza la compra a ESTADO_PROCESO = TG y, al enviarlos, TE
+ 
+Pago rechazado (FAILED)
+   1. Registra el pago rechazado
+   2. Actualiza la compra a ESTADO = RZ
+Idempotencia
+El procesamiento es idempotente, de modo que un mismo pago no genera tiquetes dos veces aunque lleguen callback y webhook:
+•	Si la compra ya está en ESTADO = PG, cualquier evento posterior se descarta.
+•	Si la compra ya está en ESTADO = RZ y llega otro rechazo, se descarta.
+•	Los eventos PENDING no producen ningún efecto.
+17. Estados de la compra y del pago
+17.1 ST_COMPRA.ESTADO
+Código	Significado
+IT	Intento - compra recién creada.
+PP	Pendiente de pago.
+PG	Pagado / confirmado.
+RZ	Rechazado.
+CS	Cancelado.
+
+17.2 ST_COMPRA.ESTADO_PROCESO
+Código	Significado
+IT	Itinerarios.
+PT	Puestos.
+PS	Pasajeros.
+PG	Pago en curso (trabajo en progreso).
+TG	Tiquetes generados.
+TE	Tiquetes enviados.
+
+Advertencia sobre el código PG: ESTADO y ESTADO_PROCESO usan el mismo código "PG" con significados distintos. ESTADO = PG significa pagado; ESTADO_PROCESO = PG significa únicamente que el pago está en curso. La fuente de verdad del resultado del pago es ESTADO, nunca ESTADO_PROCESO.
+17.3 Estado normalizado del pago
+El módulo de pagos expone el estado normalizado que devuelven la consulta de estado y los eventos SSE:
+Estado	Se deriva de
+SUCCESS	ESTADO = PG, o ESTADO_PROCESO en TG/TE (tiquetes ya generados o enviados).
+FAILED	ESTADO = RZ.
+PENDING	Cualquier otro caso: IT, PP o CS sin tiquetes generados.
+
+18. Parametrización de la página
+GET  {{host}}/api/v1/configuracion-pagina/all-configuracion/{empresa}
+Devuelve la información parametrizable que puede visualizarse en la página: coberturas del seguro, recomendaciones, valor del seguro, datos de contacto y enlaces de términos, políticas, equipaje y mascotas.
+{
+  "error": false,
+  "message": "Configuración de pagina obtenida exitosamente",
+  "data": {
+    "codigoEmpresa": "EC",
+    "detalleSeguro": [ { "codigoEmpresa": "EC", "consecutivo": "02", "descripcion": "..." } ],
+    "recomendacionWeb": [ { "codigoEmpresa": "EC", "consecutivo": "01", "descripcion": "..." } ],
+    "terminosCondicionesSeguro": "https://...",
+    "politicaSeguro": "https://...",
+    "valorSeguro": 2900,
+    "celularContacto": "3205020000",
+    "telefonoContacto": "018000518001",
+    "terminosCondiciones": "https://...",
+    "politicaMenores": "https://...",
+    "equipaje": "https://...",
+    "mascotas": "https://...",
+    "politicaPrivacidad": "https://...",
+    "descripcionItinerario": "..."
+  }
+}
+19. Flujo completo
+1. AUTENTICACIÓN
+   POST /auth/login                              -> TOKEN
+ 
+2. OBTENER TRANSACCIÓN
+   GET  /api/v1/tiquetes/obtener-transaccion     -> llaveTransaccion
+ 
+3. CATÁLOGO, ITINERARIO Y PUESTO
+   Ver Guía de venta directa sin pasarela, secciones 4 a 14
+   (orígenes, destinos, líneas, puestos, marcar puesto, países, tipo de pasajero)
+ 
+4. CREAR COMPRA
+   POST /api/v1/compras/create                   estado IT / proceso IT
+ 
+5. ACTUALIZAR COMPRA
+   PATCH /api/v1/compras/update/{transaccion}    proceso PT
+ 
+6. REGISTRAR PASAJEROS
+   POST /api/v1/compras/pasajero/create
+ 
+7. ACTUALIZAR COMPRA
+   PATCH /api/v1/compras/update/{transaccion}    proceso PS
+ 
+8. REGISTRAR COMPRADOR
+   POST /api/v1/compras/comprador/create
+ 
+9. CONSULTAR MEDIOS DE PAGO
+   GET  /api/v1/pagos/medios-pago                -> seleccionar codigo
+ 
+10. ACTUALIZAR COMPRA
+   PATCH /api/v1/compras/update/{transaccion}
+        medioPago (id), valorCompra, tiquetesBody, proceso PG
+ 
+11. [SOLO ADDI] CONSULTAR CONFIGURACIÓN
+    GET  /api/v1/pagos/ADDI/config?requestedAmount={valorCompra}
+ 
+12. INICIAR PAGO
+    POST /api/v1/pagos/{codigo}/iniciar
+         { transaccion, redirectUrl: "https://mi-frontend.com/confirmacion/" }
+ 
+13. EVALUAR data.accion
+    |
+    +-- MODAL_KUSHKI (TARJETA / TRANSFERENCIA)
+    |      Abrir KForm
+    |      Kushki -> /api/v1/kushki/checkout/callback | /webhook/kushki
+    |      Regreso al front: {redirectUrl}{transaccion}  (sin parámetros)
+    |
+    +-- PUSH (NEQUI)
+    |      Suscribirse: GET /api/v1/pagos/{transaccion}/subscribe
+    |      o consultar:  GET /api/v1/pagos/{transaccion}/estado?referencia=...
+    |      (Nequi no redirige el navegador: redirectUrl no aplica)
+    |
+    +-- REDIRECT (ADDI)
+    |      Redirigir a data.url (Addi)
+    |      Addi -> /api/v1/addi/callback   (webhook, confirma el pago; en paralelo)
+    |      Addi -> {redirectUrl}{transaccion}   (navegador, directo, sin pasar por el backend)
+    |
+    +-- DIRECTO
+           Continuar el flujo propio del aliado
+ 
+En los tres casos con redirección (MODAL_KUSHKI y REDIRECT), el frontend
+SIEMPRE debe terminar consultando el paso 14 para saber el resultado real.
+ 
+14. CONFIRMACIÓN
+    GET  /api/v1/pagos/{transaccion}/estado
+         SUCCESS -> el backend ya generó y envió los tiquetes
+         FAILED  -> mostrar rechazo y permitir reintentar
+         PENDING -> seguir esperando
+20. Resumen de endpoints
+Endpoint	Método	Token	Descripción
+/auth/login	POST	No	Autenticación.
+/api/v1/tiquetes/obtener-transaccion	GET	Sí	Obtiene la llaveTransaccion.
+/api/v1/compras/create	POST	Sí	Crea la compra.
+/api/v1/compras/update/{transaccion}	PATCH	Sí	Actualiza la compra.
+/api/v1/compras/pasajero/create	POST	Sí	Registra un pasajero.
+/api/v1/compras/comprador/create	POST	Sí	Registra el comprador.
+/api/v1/pagos/medios-pago	GET	Sí	Medios de pago disponibles.
+/api/v1/pagos/{codigo}/config	GET	Sí	Configuración del medio (solo ADDI).
+/api/v1/pagos/{codigo}/iniciar	POST	Sí	Inicia el pago en la pasarela.
+/api/v1/pagos/{transaccion}/estado	GET	Sí	Consulta el estado del pago.
+/api/v1/pagos/{transaccion}/subscribe	GET	No	Suscripción SSE al estado del pago.
+/api/v1/kushki/checkout/callback	POST/GET	No	Callback de Kushki (lo invoca Kushki).
+/api/v1/kushki/webhook/kushki	POST	No	Webhook de Kushki (lo invoca Kushki).
+/api/v1/addi/callback	POST	No	Callback de Addi (lo invoca Addi).
+/api/v1/configuracion-pagina/all-configuracion/{empresa}	GET	Sí	Parametrización de la página.
+
+21. Consideraciones finales
+Transacción
+La llaveTransaccion identifica la compra de principio a fin. Es el cart_id de Kushki y el orderId de Addi; con ella el backend recupera la compra al recibir cualquier notificación de las pasarelas.
+El valor lo define el backend
+El valor a cobrar no se envía al iniciar el pago: el backend siempre usa el valor registrado en la compra. Por eso es obligatorio actualizar valorCompra antes de iniciar el pago.
+El campo accion gobierna el front
+No existe un indicador de redirección en el listado de medios de pago. El front debe decidir siempre a partir de data.accion: REDIRECT, MODAL_KUSHKI, PUSH o DIRECTO.
+Los tiquetes los genera el backend
+En las tres pasarelas, la generación y el envío de tiquetes ocurren en el backend al confirmar el pago, de forma idempotente. El aliado solo debe consultar el estado para mostrar el resultado.
+Confirmación según el medio
+•	TARJETA: se resuelve en el callback del checkout; el webhook es el respaldo.
+•	TRANSFERENCIA: puede quedar PENDING al volver del banco; se confirma con el webhook o reconsultando el estado.
+•	NEQUI: se confirma por verificación activa del backend; usar SSE para enterarse en segundos. No hay redirección de navegador: el comprador nunca sale de la página que inició el pago, y redirectUrl no aplica.
+•	ADDI: el pago se confirma con el callback de Addi (servidor a servidor); la vuelta del navegador a redirectUrl es un paso independiente, que puede llegar antes, después o al mismo tiempo.
+Redirección multi-frontend: la URL la manda quien integra
+Con más de un frontend (página web, app móvil, aliados) cada uno conoce y manda su propia redirectUrl al iniciar el pago (sección 12.6) — el backend no mantiene un catálogo de "canales" ni decide por nadie a qué frontend volver. Integrar un consumidor nuevo no requiere darlo de alta con nosotros: solo mandar su URL.
+•	Addi: la redirectUrl se le pasa directo a Addi; es Addi quien redirige el navegador ahí, sin pasar por nuestro backend.
+•	Kushki: su callback siempre llega a nuestro backend con solo la transacción, así que la redirectUrl se guarda en ST_COMPRA_PAGO al iniciar el pago, para poder usarla cuando llegue ese callback.
+•	Si no se envía redirectUrl (integraciones existentes que aún no la mandan), se usa un default de servidor: solo un respaldo, no el mecanismo principal.
+•	La redirección nunca lleva parámetros de estado en la URL: el frontend siempre consulta GET /pagos/{transaccion}/estado al llegar. Decidir cómo mostrar el resultado es responsabilidad del frontend, no del backend.
+Reintentos
+Si un pago queda en FAILED, la compra queda en RZ. Para reintentar con otro medio de pago se debe generar una nueva compra con una nueva transacción.

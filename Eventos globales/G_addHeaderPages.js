@@ -6,7 +6,7 @@ async function G_addHeaderPages() {
     <section class="hero" id="header-expreso-brasilia">
         <div class="hero-overlay"></div>
         <div class="hero-content">
-            <img src="https://runtimetest.lappiz.io/assets/images/expreso/Logo_uni.svg" alt="Expreso Brasilia" class="hero-logo">
+            <img src="https://runtimetest.lappiz.io/assets/images/expreso/wallpaper_unitransco.png" alt="Expreso Brasilia" class="hero-logo">
         </div>
     </section>
     <div id="timer" class="d-none"

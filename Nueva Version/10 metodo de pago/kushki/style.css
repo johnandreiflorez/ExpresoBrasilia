@@ -1,94 +1,674 @@
 .payment-container {
-    max-width: 700px;
+    width: 100%;
+    max-width: 560px;
+
     margin: 0 auto;
-    padding: 20px;
+
+    padding: 15px 16px 30px;
 }
+
+
+/* ==========================================
+   TITULO
+   ========================================== */
 
 .payment-title {
+    margin: 0 0 28px;
+
     color: #123f68;
-    font-size: 32px;
+
+    font-size: clamp(22px, 5vw, 30px);
+    line-height: 1.2;
+
     font-weight: 700;
-    margin-bottom: 45px;
 }
+
+
+/* ==========================================
+   GRID
+   ========================================== */
 
 .payment-grid {
+    width: 100%;
+
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 28px;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 16px;
 }
 
-.payment-card {
-    height: 170px;
 
-    border: 1px solid #d8d8d8;
+/* ==========================================
+   TARJETA
+   ========================================== */
+
+.payment-card {
+    width: 100%;
+    min-width: 0;
+
+    height: 115px;
+
+    padding: 10px 8px;
+
+    border: 1px solid #d5d5d5;
     border-radius: 6px;
 
-    background: white;
+    background: #ffffff;
 
     display: flex;
     flex-direction: column;
+
     justify-content: center;
     align-items: center;
 
     cursor: pointer;
 
-    transition: all .2s ease;
+    font-family: inherit;
+
+    overflow: hidden;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
+
+
+/* ==========================================
+   HOVER
+   ========================================== */
 
 .payment-card:hover {
     border-color: #7fa4c7;
-    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.07);
 }
+
+
+/* ==========================================
+   SELECCIONADO
+   ========================================== */
 
 .payment-card.selected {
     border: 2px solid #005baa;
 }
 
+
+/* ==========================================
+   CONTENEDOR LOGO
+   ========================================== */
+
 .payment-logo-container {
-    height: 70px;
+    width: 100%;
+    height: 46px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
-    margin-bottom: 12px;
+    margin-bottom: 6px;
+
+    overflow: hidden;
 }
+
+
+/* ==========================================
+   IMAGEN
+   ========================================== */
 
 .payment-logo {
     display: block;
+
+    max-width: 85%;
+    max-height: 42px;
+
+    width: auto;
+    height: auto;
+
     object-fit: contain;
 }
 
-/* Ajusta estos tamaños según tus imágenes */
+
+/* ==========================================
+   TAMAÑOS DE LOGOS
+   ========================================== */
 
 .payment-logo-kushki {
-    width: 180px;
+    width: min(120px, 88%);
 }
 
 .payment-logo-nequi {
-    width: 140px;
+    width: min(95px, 78%);
 }
 
 .payment-logo-transferencia {
-    width: 70px;
+    width: min(52px, 45%);
 }
 
 .payment-logo-addi {
-    width: 130px;
+    width: min(90px, 72%);
 }
 
+
+/* ==========================================
+   NOMBRE
+   ========================================== */
+
 .payment-name {
-    font-size: 20px;
-    color: #111;
+    max-width: 100%;
+
+    color: #111111;
+
+    font-size: clamp(15px, 3.5vw, 20px);
+
+    line-height: 1.2;
+
+    font-weight: 400;
+
+    text-align: center;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* ==========================================
+   TABLETS
+   ========================================== */
+
+@media (max-width: 600px) {
+
+    .payment-container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .payment-grid {
+        gap: 12px;
+    }
+
+    .payment-card {
+        height: 110px;
+    }
+
+    .payment-logo-container {
+        height: 44px;
+    }
+
+    .payment-logo {
+        max-height: 38px;
+    }
+
+    .payment-name {
+        font-size: 16px;
+    }
+}
+
+
+/* ==========================================
+   CELULARES PEQUEÑOS
+   ========================================== */
+
+@media (max-width: 400px) {
+
+    .payment-container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .payment-grid {
+        gap: 10px;
+    }
+
+    .payment-card {
+        height: 100px;
+
+        padding: 8px 5px;
+    }
+
+    .payment-logo-container {
+        height: 40px;
+
+        margin-bottom: 5px;
+    }
+
+    .payment-logo {
+        max-height: 34px;
+    }
+
+    .payment-name {
+        font-size: 13px;
+    }
+}
+
+/* =========================================================
+   TITULAR - ESTILOS DEL FORMULARIO DE PASAJEROS
+   ========================================================= */
+.titular-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.factura-tercero .form-check-input {
+    margin-right: 0 !important;
+}
+
+.titular-form label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.4rem;
+    display: block;
+    font-size: 0.9rem;
+}
+
+.form-field-pill {
+    position: relative;
+    width: 100%;
+}
+
+.custom-pill-input {
+    width: 100% !important;
+    height: 48px !important;
+    background-color: #f1f3f6 !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 0 1.2rem !important;
+    font-size: 0.9rem !important;
+    color: #2d3748 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.custom-pill-input::placeholder {
+    color: #a0aec0 !important;
+}
+
+.custom-pill-input:focus {
+    background-color: #ffffff !important;
+    border: 1px solid #1f4368 !important;
+    box-shadow: 0 0 0 2px rgba(31, 67, 104, 0.1) !important;
+}
+
+.readonly-input {
+    background-color: #f2f4f7 !important;
+    cursor: not-allowed;
+}
+
+/* Adaptación de Kendo UI al estilo Pill Shape */
+.custom-pill-kendo.k-picker,
+.custom-pill-kendo.k-dropdownlist,
+.custom-pill-kendo.k-combobox {
+    width: 100% !important;
+    background-color: #f2f4f7 !important;
+    border: 1px solid transparent !important;
+    border-radius: 25px !important;
+    padding: 0.25rem 0.6rem !important;
+}
+
+.custom-pill-kendo .k-input-inner {
+    font-size: 0.9rem !important;
+    color: #334155 !important;
+}
+
+.k-widget.k-dropdown,
+.k-widget.k-combobox,
+.k-widget.k-datepicker {
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.k-dropdown-wrap,
+.k-picker-wrap,
+.k-state-default {
+    background-color: #f1f3f6 !important;
+    border: none !important;
+    border-radius: 25px !important;
+    height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 0.8rem 0 1.2rem !important;
+    box-shadow: none !important;
+}
+
+.k-dropdown-wrap.k-state-hover,
+.k-dropdown-wrap.k-state-focused,
+.k-picker-wrap.k-state-hover,
+.k-picker-wrap.k-state-focused {
+    background-color: #e8ecf1 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.k-dropdown-wrap .k-input,
+.k-combobox .k-input,
+.k-picker-wrap .k-input {
+    height: 100% !important;
+    line-height: 48px !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    font-size: 0.9rem !important;
+    color: #2d3748 !important;
+    box-shadow: none !important;
+}
+
+.k-select,
+.k-combobox .k-state-hover .k-select {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 30px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.k-icon {
+    color: #718096 !important;
+}
+
+.k-animation-container {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+}
+
+.k-list-container.k-popup.k-group.k-reset {
+    border: 1px solid #e2e8f0 !important;
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.k-list-scroller {
+    background: #ffffff !important;
+}
+
+.k-list .k-item {
+    padding: 10px 16px !important;
+    font-size: 0.88rem !important;
+    border-radius: 6px !important;
+}
+
+.k-list .k-item.k-state-hover,
+.k-list .k-item.k-state-selected {
+    background-color: #1f4368 !important;
+    color: #ffffff !important;
+}
+
+.titular-submit {
+    width: 100%;
+    height: 50px;
+    border-radius: 25px;
+    background-color: #123d67;
+    border: none;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: background-color 0.2s ease;
+}
+
+.titular-submit:hover {
+    background-color: #092a4a;
+    color: #ffffff;
 }
 
 @media (max-width: 768px) {
 
-    .payment-grid {
-        grid-template-columns: 1fr;
-    }
-
     .payment-title {
         font-size: 26px;
     }
+}
+
+/* =========================================================
+   ESTRUCTURA GENERAL Y HEADER DE PASOS
+   ========================================================= */
+.checkout-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.25rem;
+
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.checkout-header {
+    border-bottom: 1.5px solid #eef2f6;
+    padding-bottom: 12px;
+}
+
+.checkout-title {
+    color: #0b3c5d;
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.step-indicator {
+    color: #8a9ba8;
+    font-size: 0.85rem;
+    font-weight: 500;
+
+    background-color: #f1f5f9;
+    border-radius: 20px;
+    padding: 6px 12px;
+}
+
+/* =========================================================
+   FACTURACIÓN A TERCERO (CARD)
+   ========================================================= */
+.tercero-card {
+    max-width: 700px;
+    margin: 0 auto 1.5rem;
+
+    border: 1.5px solid #0d3b66;
+    border-radius: 16px;
+    padding: 16px;
+
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 59, 102, 0.08);
+}
+
+.tercero-card-header {
+    border-bottom: 1px solid #eef2f6;
+    padding-bottom: 12px;
+}
+
+.tercero-card-title {
+    color: #0d3b66;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Botón Limpiar formulario (outline azul) */
+.btn-clear-passenger {
+    background-color: #ffffff;
+    color: #123d67;
+    border: 1.5px solid #123d67;
+    border-radius: 25px;
+    height: 40px;
+    padding: 0 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-clear-passenger:hover:not(:disabled) {
+    background-color: #edf4fa;
+}
+
+/* =========================================================
+   BOTONES DE NAVEGACIÓN (apilados)
+   ========================================================= */
+.step-footer-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1rem 1.25rem 1.5rem;
+}
+
+.btn-back-payment {
+    width: 100%;
+    height: 50px;
+    border-radius: 25px;
+
+    background-color: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #0b3c5d;
+
+    font-size: 0.95rem;
+    font-weight: 700;
+
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-back-payment:hover:not(:disabled) {
+    background-color: #f1f5f9;
+    color: #0b3c5d;
+}
+
+.btn-confirm-passenger {
+    background-color: #0d3b66;
+    color: #ffffff;
+    border: none;
+    border-radius: 25px;
+    height: 50px;
+
+    font-size: 0.95rem;
+    font-weight: 700;
+
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-confirm-passenger:hover:not(:disabled) {
+    background-color: #092a4a;
+    color: #ffffff;
+}
+
+.btn-confirm-passenger:disabled {
+    background-color: #a0aec0;
+    color: #ffffff;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* =========================================================
+   ESTADO SELECCIONADO DEL MÉTODO DE PAGO
+   ========================================================= */
+.payment-card {
+    position: relative;
+}
+
+.payment-card.selected {
+    border: 2px solid #005baa;
+    box-shadow: 0 0 0 3px rgba(0, 91, 170, 0.12), 0 6px 16px rgba(0, 0, 0, 0.08);
+    background-color: #f5f9ff;
+}
+
+.payment-check {
+    display: none;
+
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+
+    background-color: #005baa;
+    color: #ffffff;
+
+    font-size: 0.85rem;
+    font-weight: 700;
+
+    align-items: center;
+    justify-content: center;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.payment-card.selected .payment-check {
+    display: inline-flex;
+}
+
+/* =========================================================
+   MODALES DE PAGO (Nequi QR y PSE)
+   ========================================================= */
+.payment-modal-content {
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.payment-modal-header {
+    background: #123d67;
+    color: #ffffff;
+    border-bottom: none;
+    padding: 1rem 1.25rem;
+}
+
+.payment-modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.payment-modal-text {
+    color: #334155;
+    font-size: 0.95rem;
+}
+
+.payment-qr-box {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 240px;
+    height: 240px;
+
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 16px;
+    background: #ffffff;
+}
+
+.payment-qr-box canvas {
+    border-radius: 8px;
+}
+
+.payment-qr-loading {
+    color: #8a9ba8;
+    font-size: 0.9rem;
+}
+
+.payment-modal-status {
+    color: #0b3c5d;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.payment-modal-hint {
+    color: #8a9ba8;
+    font-size: 0.8rem;
+}
+
+.payment-modal-footer {
+    border-top: 1px solid #eef2f6;
+    padding: 0.75rem 1rem;
+}
+
+.payment-modal-footer .btn-confirm-passenger {
+    min-width: 140px;
 }

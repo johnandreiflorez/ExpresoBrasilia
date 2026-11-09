@@ -14,6 +14,35 @@
     }
     const tiposIdentificacionTitularEndpoint = "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/getTiposIdentificacionTitular?empresa=EC&portal=S&titular=S";
 
+    // -----------------------
+    // Autenticacion: token para todos los servicios
+    // -----------------------
+    const EB_LF = "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/";
+    async function ebGetToken() {
+        try {
+            const cached = sessionStorage.getItem("EB_TOKEN");
+            if (cached) return cached;
+        } catch (e) { }
+        const res = await fetch(EB_LF + "getTokenInterno", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        const token = data && data.status ? data.token : "";
+        if (token) {
+            try { sessionStorage.setItem("EB_TOKEN", token); } catch (e) { }
+        }
+        return token;
+    }
+    function ebTokenSync() {
+        try { return sessionStorage.getItem("EB_TOKEN") || ""; } catch (e) { return ""; }
+    }
+    function ebUrlToken(url) {
+        const t = ebTokenSync();
+        return t ? url + (url.indexOf("?") >= 0 ? "&" : "?") + "token=" + encodeURIComponent(t) : url;
+    }
+    await ebGetToken();
+
     const digContainer = document.getElementById("digContainer");
     const razonSocialContainer = document.getElementById("razonSocialContainer");
     const personaNaturalFields = document.getElementById("personaNaturalFields");
@@ -21,7 +50,7 @@
     const origenesTIT = new kendo.data.DataSource({
         transport: {
             read: {
-                url: tiposIdentificacionTitularEndpoint,
+                url: () => ebUrlToken(tiposIdentificacionTitularEndpoint),
                 dataType: "json",
             },
         },
@@ -77,8 +106,9 @@
             let nameFunction = "obtenerPasajero?numDocumento=" + value;
             let lappizFunctionId = "ed4e119c-e5df-451b-9773-999319b575c6";
             let method = "GET";
+            let token = await ebGetToken();
             let body = {};
-            let config = { nameFunction, lappizFunctionId, body, method };
+            let config = { nameFunction: token ? nameFunction + "&token=" + encodeURIComponent(token) : nameFunction, lappizFunctionId, body, method };
             const response = await execLF(config);
             if (response.status)
                 fillData(response.data);

@@ -17,68 +17,332 @@
     min-height: calc(100vh - 260px);">
         <div class="step flex-column active" id="step10">
             <div class="step-content flex-grow-1">
-                <div class="payment-container">
 
-                    <h2 class="payment-title">
-                        Selecciona tu forma de pago
-                    </h2>
+                <div class="checkout-container">
+                    <!-- Header del flujo -->
+                    <div class="checkout-header d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h4 class="checkout-title mb-0">Pago</h4>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="step-indicator">Paso 2 de 3</span>
+                        </div>
+                    </div>
 
-                    <div class="payment-grid">
+                    <!-- DATOS DEL TITULAR DE LA COMPRA -->
+                    <div id="titularContainer" class="titular-container">
+                        <h2 class="payment-title">Datos del titular de la compra</h2>
+                        <form id="titularForm" class="titular-form" novalidate>
+                            <div class="form-field-pill mb-2">
+                                <label>Número de identificación<span style="color: red">*</span></label>
+                                <input type="text" id="titularNumeroId" class="custom-pill-input"
+                                    placeholder="Número de identificación" autocomplete="off" required />
+                            </div>
+                            <div class="form-field-pill mb-2">
+                                <label>Nombre<span style="color: red">*</span></label>
+                                <input type="text" id="titularNombre" class="custom-pill-input"
+                                    placeholder="Nombre completo del titular" autocomplete="off" required />
+                            </div>
+                        </form>
+                    </div>
 
-                        <button class="payment-card" data-payment="kushki">
-                            <div class="payment-logo-container">
-                                <img src="https://soporte.kushkipagos.com/hc/theming_assets/01HZKM75ZWKHJVEKAXDT5N8S56" alt="Kushki" class="payment-logo payment-logo-kushki">
+                    <!-- FACTURACIÓN A TERCERO -->
+                    <div class="factura-tercero mb-3">
+                        <label class="form-check d-flex align-items-center gap-2 mb-2">
+                            <input type="checkbox" id="facturaTercero" class="form-check-input">
+                            <span>¿Desea factura a un tercero?</span>
+                        </label>
+                    </div>
+
+                    <div id="terceroCard" class="tercero-card d-none">
+                        <div class="tercero-card-header d-flex justify-content-between align-items-center mb-3">
+                            <span class="tercero-card-title">Datos del tercero</span>
+                            <button type="button" id="clearTerceroBtn" class="btn btn-clear-passenger">Limpiar formulario</button>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6 col-lg-4">
+                                <div class="form-field-pill">
+                                    <label>Tipo de documento<span style="color: red">*</span></label>
+                                    <input id="terceroTipoId" class="custom-pill-kendo" />
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-8">
+                                <div class="form-field-pill">
+                                    <label>No. de documento<span style="color: red">*</span></label>
+                                    <input type="text" id="terceroNumeroId" class="custom-pill-input"
+                                        placeholder="No. de documento" autocomplete="off" required />
+                                </div>
                             </div>
 
-                            <span class="payment-name">
-                                Kushki
-                            </span>
-                        </button>
-
-                        <button class="payment-card selected" data-payment="nequi">
-                            <div class="payment-logo-container">
-                                <img src="https://runtimetest.lappiz.io/assets/images/expreso/nequi.svg" alt="Nequi" class="payment-logo payment-logo-nequi">
+                            <div class="col-md-4 d-none" id="terceroDigContainer">
+                                <div class="form-field-pill">
+                                    <label>DIG<span style="color: red">*</span></label>
+                                    <input type="text" id="terceroDig" class="custom-pill-input readonly-input" readonly />
+                                </div>
+                            </div>
+                            <div class="col-md-8 d-none" id="terceroRazonSocialContainer">
+                                <div class="form-field-pill">
+                                    <label>Razón social<span style="color: red">*</span></label>
+                                    <input type="text" id="terceroRazonSocial" class="custom-pill-input"
+                                        placeholder="Razón social" autocomplete="off" required />
+                                </div>
                             </div>
 
-                            <span class="payment-name">
-                                Nequi
-                            </span>
-                        </button>
+                            <div class="col-12" id="terceroPersonaNaturalFields">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-field-pill">
+                                            <label>Primer nombre<span style="color: red">*</span></label>
+                                            <input type="text" id="terceroNombre1" class="custom-pill-input"
+                                                placeholder="Primer nombre" autocomplete="off" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-field-pill">
+                                            <label>Segundo nombre</label>
+                                            <input type="text" id="terceroNombre2" class="custom-pill-input"
+                                                placeholder="Segundo nombre" autocomplete="off" />
+                                        </div>
+                                    </div>
 
-                        <button class="payment-card" data-payment="transferencia">
-                            <div class="payment-logo-container">
-                                <img src="https://runtimetest.lappiz.io/assets/images/expreso/pse.svg" alt="Transferencia"
-                                    class="payment-logo payment-logo-transferencia">
+                                    <div class="col-md-6">
+                                        <div class="form-field-pill">
+                                            <label>Primer apellido<span style="color: red">*</span></label>
+                                            <input type="text" id="terceroApellido1" class="custom-pill-input"
+                                                placeholder="Primer apellido" autocomplete="off" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-field-pill">
+                                            <label>Segundo apellido</label>
+                                            <input type="text" id="terceroApellido2" class="custom-pill-input"
+                                                placeholder="Segundo apellido" autocomplete="off" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <span class="payment-name">
-                                Transferencia
-                            </span>
-                        </button>
-
-                        <button class="payment-card" data-payment="addi">
-                            <div class="payment-logo-container">
-                                <img src="https://runtimetest.lappiz.io/assets/images/expreso/addi.svg" alt="Addi" class="payment-logo payment-logo-addi">
+                            <div class="col-12">
+                                <div class="form-field-pill">
+                                    <label>Email<span style="color: red">*</span></label>
+                                    <input type="email" id="terceroCorreo" class="custom-pill-input"
+                                        placeholder="Correo electrónico" autocomplete="off" required />
+                                </div>
                             </div>
 
-                            <span class="payment-name">
-                                Pagar en cuotas
-                            </span>
-                        </button>
+                            <div class="col-md-6">
+                                <div class="form-field-pill">
+                                    <label>Código de país<span style="color: red">*</span></label>
+                                    <input id="terceroCodigoPais" class="custom-pill-kendo" placeholder="Seleccione" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-field-pill">
+                                    <label>Celular<span style="color: red">*</span></label>
+                                    <input type="tel" id="terceroCelular" class="custom-pill-input"
+                                        placeholder="Celular" pattern="^[0-9]{10}$" autocomplete="off" required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MÉTODO DE PAGO -->
+                    <div class="payment-container">
+                        <h2 class="payment-title">Selecciona tu forma de pago</h2>
+
+                        <div class="payment-grid">
+
+                            <button type="button" class="payment-card" data-payment="kushki">
+                                <span class="payment-check">&#10003;</span>
+                                <div class="payment-logo-container">
+                                    <img src="https://soporte.kushkipagos.com/hc/theming_assets/01HZKM75ZWKHJVEKAXDT5N8S56" alt="Kushki" class="payment-logo payment-logo-kushki">
+                                </div>
+
+                                <span class="payment-name">
+                                    Kushki
+                                </span>
+                            </button>
+
+                            <button type="button" class="payment-card" data-payment="nequi">
+                                <span class="payment-check">&#10003;</span>
+                                <div class="payment-logo-container">
+                                    <img src="https://runtimetest.lappiz.io/assets/images/expreso/nequi.svg" alt="Nequi" class="payment-logo payment-logo-nequi">
+                                </div>
+
+                                <span class="payment-name">
+                                    Nequi
+                                </span>
+                            </button>
+
+                            <button type="button" class="payment-card" data-payment="transferencia">
+                                <span class="payment-check">&#10003;</span>
+                                <div class="payment-logo-container">
+                                    <img src="https://runtimetest.lappiz.io/assets/images/expreso/pse.svg" alt="Transferencia"
+                                        class="payment-logo payment-logo-transferencia">
+                                </div>
+
+                                <span class="payment-name">
+                                    Transferencia
+                                </span>
+                            </button>
+
+                            <button type="button" class="payment-card" data-payment="addi">
+                                <span class="payment-check">&#10003;</span>
+                                <div class="payment-logo-container">
+                                    <img src="https://runtimetest.lappiz.io/assets/images/expreso/addi.svg" alt="Addi" class="payment-logo payment-logo-addi">
+                                </div>
+
+                                <span class="payment-name">
+                                    Pagar en cuotas
+                                </span>
+                            </button>
+
+                        </div>
 
                     </div>
 
-                </div>
+                    <!-- Modal Kushki: formulario de tarjeta -->
+                    <div class="modal fade" id="kushkiModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content payment-modal-content">
+                                <div class="modal-header payment-modal-header">
+                                    <h5 class="modal-title">Pagar con tarjeta (Kushki)</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form action="https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/callbackKushki"
+                                        method="post" id="my-form">
+                                        <input type="hidden" name="cart_id" value="123">
+                                    </form>
+                                </div>
+                                <div class="modal-footer payment-modal-footer">
+                                    <button type="button" class="btn btn-back-payment"
+                                        data-bs-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- Formulario oculto Kushki -->
-                <form action="https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/callbackKushki"
-                    method="post" id="my-form">
-                    <input type="hidden" name="cart_id" value="123">
-                </form>
+                    <!-- Modal Nequi: QR de pago -->
+                    <div class="modal fade" id="nequiModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content payment-modal-content">
+                                <div class="modal-header payment-modal-header">
+                                    <h5 class="modal-title">Pagar con Nequi</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body text-center">
+                                    <p class="payment-modal-text">Escanea el código QR con tu app Nequi para aprobar
+                                        el pago.</p>
+                                    <div class="payment-qr-box">
+                                        <canvas id="nequiQr" width="220" height="220"
+                                            style="display: none;"></canvas>
+                                        <div id="nequiQrLoading" class="payment-qr-loading">Generando código QR...
+                                        </div>
+                                    </div>
+                                    <p id="nequiEstado" class="payment-modal-status mt-2">Esperando aprobación en la
+                                        app Nequi...</p>
+                                    <p class="payment-modal-hint">El cobro expira en 45 minutos.</p>
+                                </div>
+                                <div class="modal-footer payment-modal-footer">
+                                    <button type="button" class="btn btn-back-payment"
+                                        data-bs-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal PSE: datos para la transferencia bancaria -->
+                    <div class="modal fade" id="pseModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content payment-modal-content">
+                                <div class="modal-header payment-modal-header">
+                                    <h5 class="modal-title">Transferencia bancaria (PSE)</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <div class="form-field-pill">
+                                                <label>Banco<span style="color: red">*</span></label>
+                                                <select id="pseBanco" class="custom-pill-input">
+                                                    <option value="">Seleccione el banco...</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-field-pill">
+                                                <label>Tipo de documento<span style="color: red">*</span></label>
+                                                <select id="pseTipoDocumento" class="custom-pill-input">
+                                                    <option value="CC">Cédula de ciudadanía</option>
+                                                    <option value="CE">Cédula de extranjería</option>
+                                                    <option value="NIT">NIT</option>
+                                                    <option value="TI">Tarjeta de identidad</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-field-pill">
+                                                <label>Tipo de persona<span style="color: red">*</span></label>
+                                                <select id="pseTipoPersona" class="custom-pill-input">
+                                                    <option value="Natural">Natural</option>
+                                                    <option value="Juridica">Jurídica</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="form-field-pill">
+                                                <label>Número de documento<span style="color: red">*</span></label>
+                                                <input type="text" id="pseNumeroDocumento"
+                                                    class="custom-pill-input" placeholder="Número de documento"
+                                                    autocomplete="off" required />
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="form-field-pill">
+                                                <label>Nombre del titular<span style="color: red">*</span></label>
+                                                <input type="text" id="pseNombre" class="custom-pill-input"
+                                                    placeholder="Nombre completo" autocomplete="off" required />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-field-pill">
+                                                <label>Email<span style="color: red">*</span></label>
+                                                <input type="email" id="pseEmail" class="custom-pill-input"
+                                                    placeholder="Correo electrónico" autocomplete="off" required />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-field-pill">
+                                                <label>Teléfono<span style="color: red">*</span></label>
+                                                <input type="tel" id="pseTelefono" class="custom-pill-input"
+                                                    placeholder="Celular" autocomplete="off" required />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer payment-modal-footer">
+                                    <button type="button" class="btn btn-back-payment"
+                                        data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-confirm-passenger" id="pseContinuarBtn">Ir al
+                                        banco</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="step-footer py-2 text-right">
-                <button type="button" class="btn btn-secondary" id="btnBack">Atrás</button>
-                <!-- <button class="btn btn-primary" id="btnPayuSubmit"> Confirmar y continuar</button> -->
+            <div class="step-footer step-footer-stacked py-3">
+                <button type="button" class="btn btn-back-payment" id="btnBack">
+                    <i class="fa fa-arrow-left me-2"></i>Volver a pasajeros
+                </button>
+                <button type="button" class="btn btn-confirm-passenger w-100" id="btnContinuePayment">
+                    Continuar a pago
+                </button>
             </div>
         </div>
     </div>

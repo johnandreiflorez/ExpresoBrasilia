@@ -297,8 +297,78 @@ console.log("Iniciar con la Selección de asientos");
     // -----------------------
     // API helpers (execLF)
     // -----------------------
+    const EB_LF = "https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/";
+    async function ebGetToken() {
+        try {
+            const cached = sessionStorage.getItem("EB_TOKEN");
+            if (cached) return cached;
+        } catch (e) { }
+        const res = await fetch(EB_LF + "getTokenInterno", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        const token = data && data.status ? data.token : "";
+        if (token) {
+            try { sessionStorage.setItem("EB_TOKEN", token); } catch (e) { }
+        }
+        return token;
+    }
+    async function ebWithToken(url) {
+        const token = await ebGetToken();
+        if (!token) return url;
+        return url + (url.indexOf("?") >= 0 ? "&" : "?") + "token=" + encodeURIComponent(token);
+    }
+    function ebTransaccionId() {
+        if (state.llaveTransaccion) return state.llaveTransaccion;
+        try {
+            const tx = JSON.parse(sessionStorage.getItem("EB_TRANSACCION") || "null");
+            return tx && tx.llaveTransaccion ? tx.llaveTransaccion : null;
+        } catch (e) { return null; }
+    }
+    async function ebActualizarCompra(body) {
+        const transaccion = ebTransaccionId();
+        if (!transaccion) {
+            console.warn("actualizarCompra omitido: sin llaveTransaccion");
+            return null;
+        }
+        try {
+            const token = await ebGetToken();
+            const res = await fetch(EB_LF + "actualizarCompra", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(Object.assign({}, body, { transaccion, token }))
+            });
+            const data = await res.json();
+            if (data && data.error) console.error("actualizarCompra:", data.message);
+            return data;
+        } catch (e) {
+            console.error("actualizarCompra error:", e);
+            return null;
+        }
+    }
+    function ebValorCompra() {
+        try {
+            let total = 0;
+            const n = state.cantidadPasajeros || 1;
+            [state.viajeIda, state.viajeRegreso].forEach((v) => {
+                ((v && v.lineas) || []).forEach((l) => {
+                    const t = (l.data && l.data.tarifa) || {};
+                    const base = t.valorTarifa || 0;
+                    const iva = (base * (t.porcentajeIva || 0)) / 100;
+                    const imp = (base * (t.porcentajeImpuesto || 0)) / 100;
+                    total += (base + iva + imp + (t.valorEstampilla || 0)) * n;
+                });
+            });
+            return Math.round(total) || null;
+        } catch (e) { return null; }
+    }
     async function execLappizFunction(config) {
         try {
+            const token = await ebGetToken();
+            if (token) {
+                config.body = Object.assign({}, config.body || {}, { token });
+            }
             const res = await execLF(config);
             return res;
         } catch (err) {
@@ -474,7 +544,7 @@ console.log("Iniciar con la Selección de asientos");
     async function getPuestoByapi(seg) {
         // Consumir API de puestos (misma URL que tenías)
         const url = `https://txtest.lappiz.io/ExpresoBrasilia_Lappiz.api/api/functions/getPuestos?empresa=${encodeURIComponent(seg.empresa)}&origen=${encodeURIComponent(seg.codigoOrigen)}&destino=${encodeURIComponent(seg.codigoDestino)}&fechaViaje=${encodeURIComponent(seg.fechaViaje)}&ruta=${encodeURIComponent(seg.ruta)}&hora=${encodeURIComponent(seg.hora)}&ageContact=S`;
-        const res = await fetch(url);
+        const res = await fetch(await ebWithToken(url));
         const json = await res.json();
         const puestos = Array.isArray(json?.data) ? json.data : [];
         return puestos
@@ -783,7 +853,13 @@ console.log("Iniciar con la Selección de asientos");
             goLocation('#/page/lineas/ExpresoBrasilia_Lappiz');
             return;
         }
-        saveStateToPouch();
+        await saveStateToPouch();
+        const valorCompra = ebValorCompra();
+        await ebActualizarCompra({
+            estado: "PP",
+            estadoProceso: "PT",
+            valorCompra: valorCompra || undefined
+        });
         goLocation('#/page/pasajeros/ExpresoBrasilia_Lappiz');
         // Swal.fire({ title: "Éxito", text: "Has seleccionado tus asientos en todos los trayectos.", icon: "success" });
     }
